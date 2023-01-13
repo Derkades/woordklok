@@ -40,11 +40,6 @@
 #define HUE_SHIFT_DEG 90
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 
-/**
- * TODO
- * Fade out / draw in animation when turning clock on or off (ha_state)
- */
-
 const TimeChangeRule SUMMER = {"CEST", Last, Sun, Mar, 2, 120};
 const TimeChangeRule WINTER = {"CET ", Last, Sun, Oct, 3, 60};
 Timezone localTimezone(SUMMER, WINTER);
@@ -359,95 +354,89 @@ void addRgb(const CRGB *src, CRGB *dest) {
 }
 
 void writeWordsToLeds(const int &display_limit = -1) {
-    // if (!ha_state) {
-    //     for (int i = 0; i < 220; i++) {
-    //         leds[i] = 0;
-    //     }
-    // } else {
-        // Fill background
-        for (int i = 0; i < 110; i++) {
-            CRGB rgb = 0x000000;
+    // Fill background
+    for (int i = 0; i < 110; i++) {
+        CRGB rgb = 0x000000;
+        switch(ha_effect) {
+            case EFFECT_STATIC:
+            case EFFECT_RAINBOW:
+                break;
+            case EFFECT_TEST_PATTERN:
+                switch(((tick / 64 + i) % 3)) {
+                    case 0: rgb.r = 0x40; break;
+                    case 1: rgb.g = 0x40; break;
+                    case 2: rgb.b = 0x40; break;
+                }
+                break;
+            case EFFECT_SPARKLE_STATIC: {
+                const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
+
+                const short a = 3821;
+                const short b = a - (tick + hash(i)) % a;
+                if (b <= 2*led_brightness) {
+                    uint8_t v = (uint8_t) b;
+                    if (v > led_brightness) {
+                        v = 2*led_brightness - v;
+                    }
+                    CHSV hsv;
+                    hsv.setHSV(complementary_hue, ha_saturation, v);
+                    hsv2rgb_rainbow(hsv, rgb);
+                }
+                break;
+            } case EFFECT_SHOWER: {
+                const short rain_speed = 8; // higher is faster
+
+                short row;
+                short col;
+                letterToRowCol(i, &row, &col);
+                const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
+
+                const short a = 1249;
+                const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
+                const uint8_t brightness = 192;
+                if (v <= brightness) {
+                    CHSV hsv;
+                    hsv.setHSV(complementary_hue, ha_saturation, v);
+                    hsv2rgb_rainbow(hsv, rgb);
+                }
+            }
+        }
+        leds[i*2] = rgb;
+        leds[i*2+1] = rgb;
+    }
+
+    // Fill foreground:
+    int drawn_letters = 0;
+    for (word_t word : current_words) {
+        for (short i = 1; i < word[0] + 1; i++) {
+            if (display_limit != -1 && ++drawn_letters > display_limit) {
+                goto exit;
+            }
+
+            int led_pos = word[i];
+
+            CRGB rgb = leds[led_pos*2];
+
             switch(ha_effect) {
-                case EFFECT_STATIC:
-                case EFFECT_RAINBOW:
-                    break;
                 case EFFECT_TEST_PATTERN:
-                    switch(((tick / 64 + i) % 3)) {
-                        case 0: rgb.r = 0x40; break;
-                        case 1: rgb.g = 0x40; break;
-                        case 2: rgb.b = 0x40; break;
-                    }
+                case EFFECT_STATIC:
+                    rgb.setHSV(ha_hue, ha_saturation, led_brightness);
                     break;
-                case EFFECT_SPARKLE_STATIC: {
-                    const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
-
-                    const short a = 3821;
-                    const short b = a - (tick + hash(i)) % a;
-                    if (b <= 2*led_brightness) {
-                        uint8_t v = (uint8_t) b;
-                        if (v > led_brightness) {
-                            v = 2*led_brightness - v;
-                        }
-                        CHSV hsv;
-                        hsv.setHSV(complementary_hue, ha_saturation, v);
-                        hsv2rgb_rainbow(hsv, rgb);
-                    }
+                case EFFECT_RAINBOW:
+                    rgb.setHSV(((tick / 4) + 16*led_pos) % 256, RAINBOW_SATURATION, led_brightness);
                     break;
-                } case EFFECT_SHOWER: {
-                    const short rain_speed = 8; // higher is faster
-
-                    short row;
-                    short col;
-                    letterToRowCol(i, &row, &col);
-                    const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
-
-                    const short a = 1249;
-                    const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
-                    const uint8_t brightness = 192;
-                    if (v <= brightness) {
-                        CHSV hsv;
-                        hsv.setHSV(complementary_hue, ha_saturation, v);
-                        hsv2rgb_rainbow(hsv, rgb);
-                    }
-                }
+                case EFFECT_SPARKLE_STATIC:
+                case EFFECT_SHOWER:
+                    CRGB rgb_add;
+                    rgb_add.setHSV(ha_hue, ha_saturation, led_brightness);
+                    addRgb(&rgb_add, &rgb);
+                    break;
             }
-            leds[i*2] = rgb;
-            leds[i*2+1] = rgb;
+
+            leds[led_pos*2] = rgb;
+            leds[led_pos*2+1] = leds[led_pos*2];
         }
-
-        // Fill foreground:
-        int drawn_letters = 0;
-        for (word_t word : current_words) {
-            for (short i = 1; i < word[0] + 1; i++) {
-                if (display_limit != -1 && ++drawn_letters > display_limit) {
-                    goto exit;
-                }
-
-                int led_pos = word[i];
-
-                CRGB rgb = leds[led_pos*2];
-
-                switch(ha_effect) {
-                    case EFFECT_TEST_PATTERN:
-                    case EFFECT_STATIC:
-                        rgb.setHSV(ha_hue, ha_saturation, led_brightness);
-                        break;
-                    case EFFECT_RAINBOW:
-                        rgb.setHSV(((tick / 4) + 16*led_pos) % 256, RAINBOW_SATURATION, led_brightness);
-                        break;
-                    case EFFECT_SPARKLE_STATIC:
-                    case EFFECT_SHOWER:
-                        CRGB rgb_add;
-                        rgb_add.setHSV(ha_hue, ha_saturation, led_brightness);
-                        addRgb(&rgb_add, &rgb);
-                        break;
-                }
-
-                leds[led_pos*2] = rgb;
-                leds[led_pos*2+1] = leds[led_pos*2];
-            }
-        }
-    // }
+    }
 
     exit:
     FastLED.show();
@@ -552,7 +541,7 @@ void loop() {
 
     switch(display_state) {
         case STATE_FADE_OUT: {
-            led_brightness -= 2;
+            led_brightness -= 4;
 
             if (led_brightness < 0) {
                 led_brightness = 0;
@@ -563,9 +552,9 @@ void loop() {
                     // array then start drawing letters one by one
                     display_state = STATE_DRAW_NEW;
                     displayed_letter_count = 0;
-                    led_brightness = ha_brightness;
                     currentTimeMagic = getTimeMagic();
                     writeTimeToWords();
+                    led_brightness = ha_brightness;
                     // delay(500);
                 }
             }
