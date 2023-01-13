@@ -76,7 +76,7 @@ DisplayState display_state  = STATE_BOOT;
 
 
 // Home Assistant light settings
-LedEffect ha_effect         = EFFECT_STATIC;
+LedEffect ha_effect         = EFFECT_SHOWER_COLOR_FADE;
 bool  ha_state              = true;
 short ha_hue                = 192;
 short ha_saturation         = 192;
