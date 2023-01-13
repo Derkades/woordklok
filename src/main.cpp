@@ -422,7 +422,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
 
                 const short a = 1249;
                 const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
-                const uint8_t brightness = 192;
+                const uint8_t brightness = 160;
                 if (v <= brightness) {
                     CHSV hsv;
                     hsv.setHSV(complementary_hue, ha_saturation, v);
