@@ -347,29 +347,54 @@ unsigned int hash(unsigned int x) {
     return x;
 }
 
-void addRgb(const CRGB *src, CRGB *dest) {
+void addRgb(CRGB *dest, const CRGB *src) {
     dest->r = min(255, dest->r + src->r);
     dest->g = min(255, dest->g + src->g);
     dest->b = min(255, dest->b + src->b);
 }
 
 void writeWordsToLeds(const int &display_limit = -1) {
+    short hue = ha_hue;
+
+    switch (ha_effect) {
+        case EFFECT_COLOR_FADE:
+        case EFFECT_SHOWER_COLOR_FADE:
+            hue = (hue + (tick >> 2)) % 256;
+            break;
+        case EFFECT_STATIC:
+        case EFFECT_RAINBOW:
+        case EFFECT_SPARKLE_STATIC:
+        case EFFECT_SHOWER:
+        case EFFECT_TEST_PATTERN:
+            // Use configured hue as-is
+            break;
+    }
+
     // Fill background
     for (int i = 0; i < 110; i++) {
         CRGB rgb = 0x000000;
         switch(ha_effect) {
             case EFFECT_STATIC:
             case EFFECT_RAINBOW:
+            case EFFECT_COLOR_FADE:
+            {
+                // Black background
                 break;
+            }
+
             case EFFECT_TEST_PATTERN:
+            {
                 switch(((tick / 64 + i) % 3)) {
                     case 0: rgb.r = 0x40; break;
                     case 1: rgb.g = 0x40; break;
                     case 2: rgb.b = 0x40; break;
                 }
                 break;
-            case EFFECT_SPARKLE_STATIC: {
-                const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
+            }
+
+            case EFFECT_SPARKLE_STATIC:
+            {
+                const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
                 const short a = 3821;
                 const short b = a - (tick + hash(i)) % a;
@@ -383,13 +408,17 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     hsv2rgb_rainbow(hsv, rgb);
                 }
                 break;
-            } case EFFECT_SHOWER: {
+            }
+
+            case EFFECT_SHOWER:
+            case EFFECT_SHOWER_COLOR_FADE:
+            {
                 const short rain_speed = 8; // higher is faster
 
                 short row;
                 short col;
                 letterToRowCol(i, &row, &col);
-                const uint8_t complementary_hue = (uint8_t) (ha_hue + HUE_SHIFT);
+                const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
                 const short a = 1249;
                 const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
@@ -399,6 +428,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     hsv.setHSV(complementary_hue, ha_saturation, v);
                     hsv2rgb_rainbow(hsv, rgb);
                 }
+                break;
             }
         }
         leds[i*2] = rgb;
@@ -420,16 +450,20 @@ void writeWordsToLeds(const int &display_limit = -1) {
             switch(ha_effect) {
                 case EFFECT_TEST_PATTERN:
                 case EFFECT_STATIC:
-                    rgb.setHSV(ha_hue, ha_saturation, led_brightness);
+                case EFFECT_COLOR_FADE:
+                    rgb.setHSV(hue, ha_saturation, led_brightness);
                     break;
                 case EFFECT_RAINBOW:
                     rgb.setHSV(((tick / 4) + 16*led_pos) % 256, RAINBOW_SATURATION, led_brightness);
                     break;
                 case EFFECT_SPARKLE_STATIC:
                 case EFFECT_SHOWER:
+                case EFFECT_SHOWER_COLOR_FADE:
                     CRGB rgb_add;
-                    rgb_add.setHSV(ha_hue, ha_saturation, led_brightness);
-                    addRgb(&rgb_add, &rgb);
+                    rgb_add.setHSV(hue, ha_saturation, led_brightness);
+                    // Add color to existing background color
+                    // TODO Perhaps add in HSV color space instead?
+                    addRgb(&rgb, &rgb_add);
                     break;
             }
 
@@ -579,7 +613,11 @@ void loop() {
 
             if (!ha_state ||
                     (tick % 512 == 0 && getTimeMagic() != currentTimeMagic)) {
-                log("Turned off, fade out");
+                if (!ha_state) {
+                    log("Turned off, fade out");
+                } else {
+                    log("Time changed, fade out");
+                }
                 display_state = STATE_FADE_OUT;
             }
 

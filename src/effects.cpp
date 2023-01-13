@@ -3,10 +3,12 @@
 
 const char *led_effect_names[] {
     "Vaste kleur",
-    "Testpatroon",
+    "Kleurtransitie",
     "Regenboog",
     "Schitter",
     "Regen",
+    "Regen met kleurtransitie",
+    "Testpatroon",
 };
 
 bool ledEffectFromString(const char *str, LedEffect *effect) {

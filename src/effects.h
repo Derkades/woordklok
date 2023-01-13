@@ -3,10 +3,12 @@
 
 enum LedEffect {
     EFFECT_STATIC,
-    EFFECT_TEST_PATTERN,
+    EFFECT_COLOR_FADE,
     EFFECT_RAINBOW,
     EFFECT_SPARKLE_STATIC,
     EFFECT_SHOWER,
+    EFFECT_SHOWER_COLOR_FADE,
+    EFFECT_TEST_PATTERN,
 };
 
 // extern const char *led_effect_names[];
