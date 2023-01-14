@@ -40,6 +40,8 @@
 #define HUE_SHIFT_DEG 90
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 
+#define INITIAL_EFFECT EFFECT_SHOWER_COLOR_FADE
+
 const TimeChangeRule SUMMER = {"CEST", Last, Sun, Mar, 2, 120};
 const TimeChangeRule WINTER = {"CET ", Last, Sun, Oct, 3, 60};
 Timezone localTimezone(SUMMER, WINTER);
@@ -76,7 +78,7 @@ DisplayState display_state  = STATE_BOOT;
 
 
 // Home Assistant light settings
-LedEffect ha_effect         = EFFECT_SHOWER_COLOR_FADE;
+LedEffect ha_effect         = EFFECT_STATIC;  // Must initially be STATIC for boot effects. Later changed to INITIAL_EFFECT.
 bool  ha_state              = true;
 short ha_hue                = 192;
 short ha_saturation         = 192;
@@ -413,19 +415,23 @@ void writeWordsToLeds(const int &display_limit = -1) {
             case EFFECT_SHOWER:
             case EFFECT_SHOWER_COLOR_FADE:
             {
-                const short rain_speed = 8; // higher is faster
+                const short rain_speed = 6; // higher is faster
+                const float dim_constant = .5f; // dimness of background compared to foreground
 
                 short row;
                 short col;
                 letterToRowCol(i, &row, &col);
+
                 const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
                 const short a = 1249;
                 const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
-                const uint8_t brightness = 160;
-                if (v <= brightness) {
+                if (v < 256) {
+                    // Dim according to led brightness (but slightly dimmer)
+                    const float dim = (led_brightness / 256.0f) * dim_constant;
+                    const uint8_t v2 = (uint8_t) (v * dim);
                     CHSV hsv;
-                    hsv.setHSV(complementary_hue, ha_saturation, v);
+                    hsv.setHSV(complementary_hue, ha_saturation, v2);
                     hsv2rgb_rainbow(hsv, rgb);
                 }
                 break;
@@ -529,8 +535,6 @@ void setup() {
     writeWord(HALLO);
     writeWordsToLeds();
 
-    delay(500);
-
     setupWifi();
 
     while (!mqttClient.connected()) {
@@ -552,11 +556,12 @@ void setup() {
 
     clearWords();
     writeWordsToLeds();
-    delay(500);
+    delay(100);
 
     currentTimeMagic = getTimeMagic();
     writeTimeToWords();
     display_state = STATE_DRAW_NEW;
+    ha_effect = INITIAL_EFFECT;
 }
 
 void loop() {
