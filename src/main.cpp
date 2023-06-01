@@ -122,7 +122,6 @@ void writeTimeToWords() {
 
     switch(currentTimeMagic) {
         case 0:
-        case 12:
             log(String(hour) + " uur");
             writeWord(hourWord(hour));
             writeWord(UUR);
@@ -195,6 +194,11 @@ void writeTimeToWords() {
             writeWord(VIJF);
             writeWord(hour > 6 ? VOOR_2 : VOOR);
             writeWord(hourWord(hour + 1));
+            break;
+        case 12:
+            log(String(hour+1) + " uur");
+            writeWord(hourWord(hour+1));
+            writeWord(UUR);
             break;
         default:
             log("Error, unknown magic: " + String(currentTimeMagic));
