@@ -409,9 +409,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     if (v > led_brightness) {
                         v = 2*led_brightness - v;
                     }
-                    CHSV hsv;
-                    hsv.setHSV(complementary_hue, ha_saturation, v);
-                    hsv2rgb_rainbow(hsv, rgb);
+                    rgb.setHSV(complementary_hue, ha_saturation, v);
                 }
                 break;
             }
@@ -434,9 +432,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     // Dim according to led brightness (but slightly dimmer)
                     const float dim = (led_brightness / 256.0f) * dim_constant;
                     const uint8_t v2 = (uint8_t) (v * dim);
-                    CHSV hsv;
-                    hsv.setHSV(complementary_hue, ha_saturation, v2);
-                    hsv2rgb_rainbow(hsv, rgb);
+                    rgb.setHSV(complementary_hue, ha_saturation, v2);
                 }
                 break;
             }
@@ -472,7 +468,6 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     CRGB rgb_add;
                     rgb_add.setHSV(hue, ha_saturation, led_brightness);
                     // Add color to existing background color
-                    // TODO Perhaps add in HSV color space instead?
                     addRgb(&rgb, &rgb_add);
                     break;
             }
