@@ -1,43 +1,56 @@
-typedef unsigned char letter_t;
-typedef unsigned char *word_t;
+// number of leds per letter
+#define LETTER_LEDS 2
+
+#define NUM_ROWS 10
+#define NUM_COLS 11
+#define NUM_LETTERS NUM_ROWS*NUM_COLS
+#define NUM_LEDS NUM_LETTERS*LETTER_LEDS
+
+typedef uint16_t *word_t;
 
 // First element denotes array length
-letter_t VIJF   [] = {4, 7, 8, 9, 10                  };
-letter_t IS     [] = {2, 4, 5                         };
-letter_t HET    [] = {3, 0, 1, 2                      };
-letter_t TIEN   [] = {4, 21, 20, 19, 18               };
-letter_t VOOR   [] = {4, 14, 13, 12, 11               };
-letter_t KWART  [] = {5, 28, 29, 30, 31, 32           };
-letter_t OVER   [] = {4, 22, 23, 24, 25               };
-letter_t HALF   [] = {4, 43, 42, 41, 40               };
-letter_t OVER_2 [] = {4, 36, 35, 34, 33               };
-letter_t EEN    [] = {3, 51, 52, 53                   };
-letter_t VOOR_2 [] = {4, 44, 45, 46, 47               };
-letter_t DRIE   [] = {4, 58, 57, 56, 55               };
-letter_t TWEE   [] = {4, 65, 64, 63, 62               };
-letter_t VIER   [] = {4, 66, 67, 68, 69               };
-letter_t VIJF_2 [] = {4, 70, 71, 72, 73               };
-letter_t ZES    [] = {3, 74, 75, 76                   };
-letter_t ZEVEN  [] = {5, 87, 86, 85, 84, 83           };
-letter_t NEGEN  [] = {5, 81, 80, 79, 78, 77           };
-letter_t ACHT   [] = {4, 88, 89, 90, 91               };
-letter_t TIEN_2 [] = {4, 91, 92, 93, 94               };
-letter_t ELF    [] = {3, 96, 97, 98                   };
-letter_t TWAALF [] = {6, 109, 108, 107, 106, 105, 104 };
-letter_t UUR    [] = {3, 101, 100, 99                 };
-letter_t ROBIN  [] = {5, 17, 26, 39, 48, 61           };
-letter_t HALLO  [] = {5, 16, 27, 38, 49, 60           };
+uint16_t HET    [] = {3, 109, 108, 107                };
+uint16_t IS     [] = {2, 105, 104                     };
+uint16_t VIJF   [] = {4, 102, 101, 100, 99            };
+
+uint16_t TIEN   [] = {4, 88, 89, 90, 91               };
+uint16_t VOOR   [] = {4, 95, 96, 97, 98               };
+
+uint16_t OVER   [] = {4, 87, 86, 85, 84               };
+uint16_t KWART  [] = {5, 81, 80, 79, 78, 77           };
+
+uint16_t HALF   [] = {4, 66, 67, 68, 69               };
+uint16_t OVER_2 [] = {4, 73, 74, 75, 76               };
+
+uint16_t VOOR_2 [] = {4, 65, 64, 63, 62               };
+uint16_t EEN    [] = {3, 58, 57, 56                   };
+
+uint16_t TWEE   [] = {4, 44, 45, 46, 47               };
+uint16_t DRIE   [] = {4, 51, 52, 53, 54               };
+
+uint16_t VIER   [] = {4, 43, 42, 41, 40               };
+uint16_t VIJF_2 [] = {4, 39, 38, 37, 36               };
+uint16_t ZES    [] = {3, 35, 34, 33                   };
+
+uint16_t ZEVEN  [] = {5, 22, 23, 24, 25, 26           };
+uint16_t NEGEN  [] = {5, 28, 29, 30, 31, 32           };
+
+uint16_t ACHT   [] = {4, 21, 20, 19, 18               };
+uint16_t TIEN_2 [] = {4, 18, 17, 16, 15               };
+uint16_t ELF    [] = {3, 13, 12, 11                   };
+
+uint16_t TWAALF [] = {6, 0, 1, 2, 3, 4, 5             };
+uint16_t UUR    [] = {3, 8, 9, 10,                    };
+
+uint16_t ROBIN  [] = {5, 92, 83, 70, 61, 48           };
+uint16_t HALLO  [] = {5, 93, 82, 71, 60, 49           };
 
 word_t HOURS[] = {
     EEN, TWEE, DRIE, VIER, VIJF_2, ZES, ZEVEN, ACHT, NEGEN, TIEN_2, ELF, TWAALF
 };
 
-short letterByRowCol(short row, short col) {
-    short base = row * 11;
-    return row % 2 == 0 ? base + col : base - col;
-}
-
 void letterToRowCol(short letter, short *row, short *col) {
-    *row = letter / 11;
-    *col = *row % 2 == 0 ? letter % 11 : 10 - (letter % 11);
+    *row = (NUM_ROWS-1) - letter / NUM_COLS;
+    // every other row has swapped direction
+    *col = *row % 2 == 0 ? letter % NUM_COLS : (NUM_COLS-1) - (letter % NUM_COLS);
 }

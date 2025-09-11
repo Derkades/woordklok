@@ -30,8 +30,8 @@
 
 #define RAINBOW_SATURATION 192
 
-#define STARTUP_ANIMATION_DELAY 4
-#define STARTUP_ANIMATION_COLOR_MOVING 0x00A0FF
+#define STARTUP_ANIMATION_DELAY 20
+#define STARTUP_ANIMATION_COLOR_MOVING 0xFFFFFF
 #define STARTUP_ANIMATION_COLOR_TRAIL 0x602000
 #define STARTUP_ANIMATION_COLOR_BACKGROUND 0x200000
 
@@ -71,10 +71,10 @@ std::list<word_t> current_words = {};
 unsigned short current_words_letter_count = 0;
 
 unsigned short tick = 0;
-short led_brightness = 255;
-short displayed_letter_count = 0;
+short led_brightness = 255; // TODO use FastLED scale
+uint16_t letter_display_limit = UINT16_MAX;
 
-DisplayState display_state  = STATE_BOOT;
+DisplayState display_state = STATE_BOOT;
 
 
 // Home Assistant light settings
@@ -84,6 +84,18 @@ short ha_hue                = 192;
 short ha_saturation         = 192;
 short ha_brightness         = 255;
 bool  ha_state_need_publish = true;
+
+void setLetterColor(uint16_t letterPos, CRGB &rgb) {
+    for (uint8_t j = 0; j < LETTER_LEDS; j++) {
+        leds[letterPos*LETTER_LEDS+j] = rgb;
+    }
+}
+
+void setLetterColor(uint16_t letterPos, uint32_t rgb) {
+    for (uint8_t j = 0; j < LETTER_LEDS; j++) {
+        leds[letterPos*LETTER_LEDS+j] = rgb;
+    }
+}
 
 void log(const String &msg) {
     const char *c_str = msg.c_str();
@@ -207,6 +219,7 @@ void writeTimeToWords() {
 }
 
 void connectToWifi() {
+    WiFi.setHostname("woordklok");
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
@@ -321,12 +334,20 @@ void setupOta() {
 
         // NOTE: if updating FS this would be the place to unmount FS using FS.end()
         log("OTA: Start updating " + type);
+
+        for (uint16_t i = 0; i < NUM_LEDS; i++) {
+            leds[i] = 0;
+        }
+        FastLED.show();
     });
     ArduinoOTA.onEnd([]() {
         log("OTA: End");
     });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        // log("OTA: Progress: " + String(progress / (total / 100)));
+        for (uint16_t letter = 0; letter < NUM_COLS * progress / total; letter++) {
+            setLetterColor(letter, 0x00FF00);
+        }
+        FastLED.show();
     });
     ArduinoOTA.onError([](ota_error_t error) {
         switch(error) {
@@ -346,20 +367,14 @@ void setupOta() {
     });
 }
 
-unsigned int hash(unsigned int x) {
+uint32_t hash(uint32_t x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = (x >> 16) ^ x;
     return x;
 }
 
-void addRgb(CRGB *dest, const CRGB *src) {
-    dest->r = min(255, dest->r + src->r);
-    dest->g = min(255, dest->g + src->g);
-    dest->b = min(255, dest->b + src->b);
-}
-
-void writeWordsToLeds(const int &display_limit = -1) {
+void writeWordsToLeds() {
     short hue = ha_hue;
 
     switch (ha_effect) {
@@ -377,7 +392,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
     }
 
     // Fill background
-    for (int i = 0; i < 110; i++) {
+    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
         CRGB rgb = 0x000000;
         switch(ha_effect) {
             case EFFECT_STATIC:
@@ -426,8 +441,8 @@ void writeWordsToLeds(const int &display_limit = -1) {
 
                 const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
-                const short a = 1249;
-                const short v = a - (rain_speed*tick - 50*row + hash(col)) % a;
+                // const short a = 1249;
+                const short v = (rain_speed*tick - 50*row + hash(col)) % 13000 % 1200;
                 if (v < 256) {
                     // Dim according to led brightness (but slightly dimmer)
                     const float dim = (led_brightness / 256.0f) * dim_constant;
@@ -437,21 +452,21 @@ void writeWordsToLeds(const int &display_limit = -1) {
                 break;
             }
         }
-        leds[i*2] = rgb;
-        leds[i*2+1] = rgb;
+
+        setLetterColor(i, rgb);
     }
 
-    // Fill foreground:
-    int drawn_letters = 0;
+    // Fill foreground
+    uint16_t drawn_letters = 0;
     for (word_t word : current_words) {
-        for (short i = 1; i < word[0] + 1; i++) {
-            if (display_limit != -1 && ++drawn_letters > display_limit) {
+        for (uint16_t i = 1; i < word[0] + 1; i++) {
+            if (++drawn_letters > letter_display_limit) {
                 goto exit;
             }
 
-            int led_pos = word[i];
+            uint16_t letterPos = word[i];
 
-            CRGB rgb = leds[led_pos*2];
+            CRGB rgb = leds[letterPos*LETTER_LEDS];
 
             switch(ha_effect) {
                 case EFFECT_TEST_PATTERN:
@@ -460,7 +475,7 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     rgb.setHSV(hue, ha_saturation, led_brightness);
                     break;
                 case EFFECT_RAINBOW:
-                    rgb.setHSV(((tick / 4) + 16*led_pos) % 256, RAINBOW_SATURATION, led_brightness);
+                    rgb.setHSV(((tick / 4) + 16*letterPos) & 0xFF, RAINBOW_SATURATION, led_brightness);
                     break;
                 case EFFECT_SPARKLE_STATIC:
                 case EFFECT_SHOWER:
@@ -468,12 +483,11 @@ void writeWordsToLeds(const int &display_limit = -1) {
                     CRGB rgb_add;
                     rgb_add.setHSV(hue, ha_saturation, led_brightness);
                     // Add color to existing background color
-                    addRgb(&rgb, &rgb_add);
+                    rgb += rgb_add;
                     break;
             }
 
-            leds[led_pos*2] = rgb;
-            leds[led_pos*2+1] = leds[led_pos*2];
+            setLetterColor(letterPos, rgb);
         }
     }
 
@@ -499,24 +513,20 @@ void setDstOffset() {
 }
 
 void startupScanAnimation() {
-    for (int i = 1; i < 220; i++) {
-        leds[i] = STARTUP_ANIMATION_COLOR_BACKGROUND;
+    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
+        setLetterColor(i, STARTUP_ANIMATION_COLOR_BACKGROUND);
     }
 
-    leds[0] = STARTUP_ANIMATION_COLOR_MOVING;
-    FastLED.show();
-    delay(STARTUP_ANIMATION_DELAY);
-
-    for (int i = 1; i < 220; i++) {
-        leds[i - 1] = STARTUP_ANIMATION_COLOR_TRAIL;
-        leds[i] = STARTUP_ANIMATION_COLOR_MOVING;
+    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
+        setLetterColor(i, STARTUP_ANIMATION_COLOR_MOVING);
         FastLED.show();
+        setLetterColor(i, STARTUP_ANIMATION_COLOR_TRAIL);
         delay(STARTUP_ANIMATION_DELAY);
     }
-    leds[219] = STARTUP_ANIMATION_COLOR_TRAIL;
 
-    for (int j = 0; j < 50; j++) {
-        for (int i = 0; i < 220; i++) {
+    // Fade out
+    for (int j = 0; j < 40; j++) {
+        for (int i = 0; i < NUM_LEDS; i++) {
             leds[i].r = (uint8_t) (leds[i].r * .9f);
             leds[i].g = (uint8_t) (leds[i].g * .9f);
             leds[i].b = (uint8_t) (leds[i].b * .9f);
@@ -527,40 +537,39 @@ void startupScanAnimation() {
 }
 
 void setup() {
-    FastLED.addLeds<NEOPIXEL, 4>(leds, 220);
+    FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS);
 
     startupScanAnimation();
 
-    writeWord(HALLO);
-    writeWordsToLeds();
+    setLetterColor(0, 0x00FF00);
+    FastLED.show();
 
     setupWifi();
-
     while (!mqttClient.connected()) {
         ArduinoOTA.handle();
-        delay(1);
+        delay(10);
     }
 
-    do {
-        ArduinoOTA.handle();
-        timeClient.update();
-
-        log("Waiting for network time... " + timeClient.getFormattedTime());
-        delay(500);
-    } while (timeClient.getHours() == 0 && timeClient.getMinutes() == 0);
-
+    timeClient.update();
     log("Found time: " + timeClient.getFormattedTime());
     setDstOffset();
     log("With DST offset: " + timeClient.getFormattedTime());
 
-    clearWords();
+    // this doesn't work, why?
+    writeWord(HALLO);
     writeWordsToLeds();
-    delay(100);
+    delay(500);
 
-    currentTimeMagic = getTimeMagic();
-    writeTimeToWords();
+    clearWords();
+    writeWord(ROBIN);
+    writeWordsToLeds();
+    delay(500);
+
+    letter_display_limit = 0;
     display_state = STATE_DRAW_NEW;
     ha_effect = INITIAL_EFFECT;
+    currentTimeMagic = getTimeMagic();
+    writeTimeToWords();
 }
 
 void loop() {
@@ -575,8 +584,6 @@ void loop() {
         publishState();
     }
 
-    int display_limit = -1;
-
     switch(display_state) {
         case STATE_FADE_OUT: {
             led_brightness -= 4;
@@ -589,23 +596,18 @@ void loop() {
                     // Display is now blank, write new time to letters
                     // array then start drawing letters one by one
                     display_state = STATE_DRAW_NEW;
-                    displayed_letter_count = 0;
+                    letter_display_limit = 0;
+                    led_brightness = ha_brightness;
                     currentTimeMagic = getTimeMagic();
                     writeTimeToWords();
-                    led_brightness = ha_brightness;
-                    // delay(500);
                 }
             }
 
             break;
         } case STATE_DRAW_NEW: {
-            led_brightness = ha_brightness;
-
-            display_limit = displayed_letter_count;
-
             if (tick % 16 == 0) {
-                if (++displayed_letter_count > current_words_letter_count) {
-                    displayed_letter_count--;
+                letter_display_limit++;
+                if (letter_display_limit > current_words_letter_count) {
                     // All letters are now displayed, go to constant display state.
                     display_state = STATE_DISPLAY_TIME;
                 }
@@ -617,11 +619,7 @@ void loop() {
 
             if (!ha_state ||
                     (tick % 512 == 0 && getTimeMagic() != currentTimeMagic)) {
-                if (!ha_state) {
-                    log("Turned off, fade out");
-                } else {
-                    log("Time changed, fade out");
-                }
+                log(ha_state ? "Time changed, fade out" : "Turned off, fade out");
                 display_state = STATE_FADE_OUT;
             }
 
@@ -633,10 +631,9 @@ void loop() {
         }
     }
 
-    writeWordsToLeds(display_limit);
+    writeWordsToLeds();
 
-    tick += 1;
-    tick %= 0xFFFF;
+    tick = (tick + 1) & 0xFFFF;
 
     delay(10);
 }
