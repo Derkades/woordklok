@@ -4,4 +4,3 @@
 .vscode/extensions.json
 .vscode/launch.json
 .vscode/ipch
-src/secrets.h

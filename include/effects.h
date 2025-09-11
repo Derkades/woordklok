@@ -1,5 +1,7 @@
-#ifndef _EFFECTS_H_
-#define	_EFFECTS_H_
+#ifndef EFFECTS_H
+#define EFFECTS_H
+
+#include <string.h>
 
 enum LedEffect {
     EFFECT_STATIC,
@@ -11,10 +13,8 @@ enum LedEffect {
     EFFECT_TEST_PATTERN,
 };
 
-// extern const char *led_effect_names[];
-
 bool ledEffectFromString(const char *str, LedEffect *effect);
 
 const char *ledEffectToString(const LedEffect &ledEffect);
 
-#endif // _EFFECTS_H_
+#endif // EFFECTS_H

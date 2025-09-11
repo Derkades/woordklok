@@ -1,6 +1,19 @@
-#pragma once
-#include <TZ.h>
+#ifndef CONFIG_H
+#define CONFIG_H
 
+#include <TZ.h>
+#include "effects.h"
+
+// WiFi
+#define WIFI_SSID ""
+#define WIFI_PASS ""
+
+// MQTT
+#define MQTT_ENABLED
+#ifdef MQTT_ENABLED
+    #define MQTT_HOST IPAddress(10, 0, 1, 1)
+    #define MQTT_PORT 1883
+#endif
 
 // Initial state
 #define INITIAL_EFFECT EFFECT_SHOWER_COLOR_FADE
@@ -23,3 +36,5 @@
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 #define BACKGROUND_DIM 2 // background brightness reduction factor (>=1)
 #define RAIN_SPEED 6 // higher is faster
+
+#endif // CONFIG_H

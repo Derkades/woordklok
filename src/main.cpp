@@ -1,20 +1,4 @@
-#include <list>
-
-#include <Arduino.h>
-#define FASTLED_INTERRUPT_RETRY_COUNT 1
-#define FASTLED_ESP8266_RAW_PIN_ORDER
-#include <FastLED.h>
-#include <ESP8266WiFi.h>
-#include <Ticker.h>
-#include <AsyncMqttClient.h>
-#include <ArduinoOTA.h>
-#include <ArduinoJson.h>
-#include <time.h>
-
-#include "led_positions.h"
-#include "secrets.h"
-#include "effects.h"
-#include "config.h"
+#include "main.h"
 
 #define MQTT_TOPIC_BASE            "woordklok"
 #define MQTT_TOPIC_LOG             MQTT_TOPIC_BASE "/" "log"
@@ -27,190 +11,35 @@
 #define MQTT_QOS_AT_LEAST_ONCE 1
 #define MQTT_QOS_EXACTLY_ONCE 2
 
-AsyncMqttClient mqttClient;
-Ticker mqttReconnectTimer;
-
 WiFiEventHandler wifiConnectHandler;
 WiFiEventHandler wifiDisconnectHandler;
 Ticker wifiReconnectTimer;
 
-enum DisplayState {
-    STATE_BOOT,
-    STATE_BLANK,
-    STATE_FADE_OUT,
-    STATE_DRAW_NEW,
-    STATE_DISPLAY_TIME,
-};
+#ifdef MQTT_ENABLED
+AsyncMqttClient mqttClient;
+Ticker mqttReconnectTimer;
+bool      ha_state_need_publish = true;
+#endif
 
-CRGB leds[222];
-
-short currentTimeMagic = -1;
-
-std::list<word_t> current_words = {};
-uint16_t current_words_letter_count = 0;
-
-uint16_t tick = 0;
-uint16_t letter_display_limit = UINT16_MAX;
-
-DisplayState display_state = STATE_BOOT;
-
-// Home Assistant light settings
-LedEffect ha_effect         = EFFECT_STATIC;  // Must initially be STATIC for boot effects. Later changed to INITIAL_EFFECT.
-bool  ha_state              = true;
-uint8_t ha_hue              = INITIAL_HUE;
-uint8_t ha_saturation       = INITIAL_HUE;
-uint8_t ha_brightness       = INITIAL_BRIGHTNESS;
-bool  ha_state_need_publish = true;
-
-void setLetterColor(uint16_t letterPos, CRGB &rgb) {
-    for (uint8_t j = 0; j < LETTER_LEDS; j++) {
-        leds[letterPos*LETTER_LEDS+j] = rgb;
-    }
-}
-
-void setLetterColor(uint16_t letterPos, uint32_t rgb) {
-    for (uint8_t j = 0; j < LETTER_LEDS; j++) {
-        leds[letterPos*LETTER_LEDS+j] = rgb;
-    }
-}
+// Home Assistant (MQTT) light settings
+bool      ha_on                 = true;
+LedEffect ha_effect             = INITIAL_EFFECT;
+uint8_t   ha_hue                = INITIAL_HUE;
+uint8_t   ha_saturation         = INITIAL_HUE;
+uint8_t   ha_brightness         = INITIAL_BRIGHTNESS;
 
 void log(const String &msg) {
+    #ifdef MQTT_ENABLED
     const char *c_str = msg.c_str();
     if (mqttClient.connected()) {
         mqttClient.publish(MQTT_TOPIC_LOG, MQTT_QOS_AT_LEAST_ONCE, false, c_str);
     }
+    #endif
 }
 
-word_t hourWord(const int &hour) {
-    int mod = hour % 12;
-    return HOURS[(mod == 0 ? 12 : mod) - 1];
-}
-
-int getTimeMagic() {
-    uint8_t minute = (uint8_t) ((time(NULL) / 60ULL) % 60ULL);
-    return (int) roundf(minute / 5.0f);
-}
-
-void clearWords() {
-    current_words.clear();
-    current_words_letter_count = 0;
-}
-
-void writeWord(word_t word) {
-    current_words.push_back(word);
-    current_words_letter_count += word[0];
-}
-
-void writeTimeToWords() {
-    uint8_t hour = (uint8_t) (time(NULL) / 3600ULL);
-
-    clearWords();
-
-    writeWord(HET);
-    writeWord(IS);
-
-    switch(currentTimeMagic) {
-        case 0:
-            log(String(hour) + " uur");
-            writeWord(hourWord(hour));
-            writeWord(UUR);
-            break;
-        case 1:
-            log("Vijf over " + String(hour));
-            writeWord(VIJF);
-            writeWord(hour > 6 ? OVER_2 : OVER);
-            writeWord(hourWord(hour));
-            break;
-        case 2:
-            log("Tien over " + String(hour));
-            writeWord(TIEN);
-            writeWord(hour > 6 ? OVER_2 : OVER);
-            writeWord(hourWord(hour));
-            break;
-        case 3:
-            log("Kwart over " + String(hour));
-            writeWord(KWART);
-            writeWord(OVER_2);
-            writeWord(hourWord(hour));
-            break;
-        case 4:
-            log("Tien voor half " + String(hour + 1));
-            writeWord(TIEN);
-            writeWord(VOOR);
-            writeWord(HALF);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 5:
-            log("Vijf voor half " + String(hour + 1));
-            writeWord(VIJF);
-            writeWord(VOOR);
-            writeWord(HALF);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 6:
-            log("Half " + String(hour + 1));
-            writeWord(HALF);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 7:
-            log("5 over half " + String(hour + 1));
-            writeWord(VIJF);
-            writeWord(OVER);
-            writeWord(HALF);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 8:
-            log("10 over half " + String(hour + 1));
-            writeWord(TIEN);
-            writeWord(OVER);
-            writeWord(HALF);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 9:
-            log("Kwart voor " + String(hour + 1));
-            writeWord(KWART);
-            writeWord(VOOR_2);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 10:
-            log("Tien voor " + String(hour + 1));
-            writeWord(TIEN);
-            writeWord(hour > 6 ? VOOR_2 : VOOR);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 11:
-            log("Vijf voor " + String(hour + 1));
-            writeWord(VIJF);
-            writeWord(hour > 6 ? VOOR_2 : VOOR);
-            writeWord(hourWord(hour + 1));
-            break;
-        case 12:
-            log(String(hour+1) + " uur");
-            writeWord(hourWord(hour + 1));
-            writeWord(UUR);
-            break;
-        default:
-            log("Error, unknown magic: " + String(currentTimeMagic));
-            break;
-    }
-}
-
-void connectToWifi() {
-    WiFi.setHostname("woordklok");
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-}
-
+#ifdef MQTT_ENABLED
 void connectToMqtt() {
     mqttClient.connect();
-}
-
-void onWifiConnect(const WiFiEventStationModeGotIP& event) {
-    connectToMqtt();
-}
-
-void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
-    mqttReconnectTimer.detach(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-    wifiReconnectTimer.once(2, connectToWifi);
 }
 
 void onMqttConnect(bool sessionPresent) {
@@ -240,9 +69,9 @@ void onMqttMessage(char* topic, char* payload_unsafe, AsyncMqttClientMessageProp
         if (doc.containsKey("state")) {
             const char *state = doc["state"];
             if (strcmp(state, "ON") == 0) {
-                ha_state = true;
+                ha_on = true;
             } else if (strcmp(state, "OFF") == 0) {
-                ha_state = false;
+                ha_on = false;
             } else {
                 log("Ignoring unsupported state: " + String(state));
             }
@@ -286,7 +115,7 @@ void onMqttMessage(char* topic, char* payload_unsafe, AsyncMqttClientMessageProp
 
 void publishState() {
     StaticJsonDocument<JSON_OBJECT_SIZE(5)> doc;
-    doc["state"] = ha_state ? "ON" : "OFF";
+    doc["state"] = ha_on ? "ON" : "OFF";
     doc["effect"] = ledEffectToString(ha_effect);
     doc["brightness"] = ha_brightness;
     JsonObject color = doc.createNestedObject("color");
@@ -302,6 +131,40 @@ void publishState() {
     mqttClient.publish(MQTT_TOPIC_HA_STATE, MQTT_QOS_AT_MOST_ONCE, false, buf);
 }
 
+#endif
+
+void connectToWifi() {
+    WiFi.setHostname("woordklok");
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+}
+
+void onWifiConnect(const WiFiEventStationModeGotIP& event) {
+    #ifdef MQTT_ENABLED
+    connectToMqtt();
+    #endif
+}
+
+void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
+    #ifdef MQTT_ENABLED
+    mqttReconnectTimer.detach(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    #endif
+    wifiReconnectTimer.once(2, connectToWifi);
+}
+
+void setupWifi() {
+    wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+    wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+
+    #ifdef MQTT_ENABLED
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.onMessage(onMqttMessage);
+    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+    #endif
+
+    connectToWifi();
+}
+
 void setupOta() {
     ArduinoOTA.onStart([]() {
         String type;
@@ -313,21 +176,11 @@ void setupOta() {
 
         // NOTE: if updating FS this would be the place to unmount FS using FS.end()
         log("OTA: Start updating " + type);
-
-        for (uint16_t i = 0; i < NUM_LEDS; i++) {
-            leds[i] = 0;
-        }
-        FastLED.show();
     });
     ArduinoOTA.onEnd([]() {
         log("OTA: End");
     });
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        for (uint16_t letter = 0; letter < NUM_COLS * progress / total; letter++) {
-            setLetterColor(letter, 0x00FF00);
-        }
-        FastLED.show();
-    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {});
     ArduinoOTA.onError([](ota_error_t error) {
         switch(error) {
             case OTA_AUTH_ERROR:
@@ -346,259 +199,39 @@ void setupOta() {
     });
 }
 
-uint32_t hash(uint32_t x) {
-    x = ((x >> 16) ^ x) * 0x45d9f3b;
-    x = ((x >> 16) ^ x) * 0x45d9f3b;
-    x = (x >> 16) ^ x;
-    return x;
-}
-
-void writeWordsToLeds() {
-    uint8_t hue = ha_hue;
-
-    switch (ha_effect) {
-        case EFFECT_COLOR_FADE:
-        case EFFECT_SHOWER_COLOR_FADE:
-            hue = qadd8(hue, tick >> 2);
-            break;
-        case EFFECT_STATIC:
-        case EFFECT_RAINBOW:
-        case EFFECT_SPARKLE_STATIC:
-        case EFFECT_SHOWER:
-        case EFFECT_TEST_PATTERN:
-            // Use configured hue as-is
-            break;
-    }
-
-    // Fill background
-    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
-        CRGB rgb = 0x000000;
-        switch(ha_effect) {
-            case EFFECT_STATIC:
-            case EFFECT_RAINBOW:
-            case EFFECT_COLOR_FADE:
-            {
-                // Black background
-                break;
-            }
-
-            case EFFECT_TEST_PATTERN:
-            {
-                switch(((tick / 64 + i) % 3)) {
-                    case 0: rgb.r = 0x40; break;
-                    case 1: rgb.g = 0x40; break;
-                    case 2: rgb.b = 0x40; break;
-                }
-                break;
-            }
-
-            case EFFECT_SPARKLE_STATIC:
-            {
-                const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
-
-                const short a = 3821;
-                const short b = a - (tick + hash(i)) % a;
-                if (b <= 2*UINT8_MAX) {
-                    uint8_t v = (uint8_t) b;
-                    if (v > UINT8_MAX) {
-                        v = 2*UINT8_MAX - v;
-                    }
-                    rgb.setHSV(complementary_hue, ha_saturation, v);
-                }
-                break;
-            }
-
-            case EFFECT_SHOWER:
-            case EFFECT_SHOWER_COLOR_FADE:
-            {
-                uint8_t row;
-                uint8_t col;
-                letterToRowCol(i, &row, &col);
-
-                const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
-
-                const short v = (RAIN_SPEED*tick - 50*row + hash(col)) % 13000 % 1200;
-                if (v < 256) {
-                    rgb.setHSV(complementary_hue, ha_saturation, v / BACKGROUND_DIM);
-                }
-                break;
-            }
-        }
-
-        setLetterColor(i, rgb);
-    }
-
-    // Fill foreground
-    uint16_t drawn_letters = 0;
-    for (word_t word : current_words) {
-        for (uint16_t i = 1; i < word[0] + 1; i++) {
-            if (++drawn_letters > letter_display_limit) {
-                goto exit;
-            }
-
-            uint16_t letterPos = word[i];
-
-            CRGB rgb = leds[letterPos*LETTER_LEDS];
-
-            switch(ha_effect) {
-                case EFFECT_TEST_PATTERN:
-                case EFFECT_STATIC:
-                case EFFECT_COLOR_FADE:
-                    rgb.setHSV(hue, ha_saturation, UINT8_MAX);
-                    break;
-                case EFFECT_RAINBOW:
-                    rgb.setHSV(((tick / 4) + 16*letterPos) & 0xFF, RAINBOW_SATURATION, UINT8_MAX);
-                    break;
-                case EFFECT_SPARKLE_STATIC:
-                case EFFECT_SHOWER:
-                case EFFECT_SHOWER_COLOR_FADE:
-                    CRGB rgb_add;
-                    rgb_add.setHSV(hue, ha_saturation, UINT8_MAX);
-                    // Add color to existing background color
-                    rgb += rgb_add;
-                    break;
-            }
-
-            setLetterColor(letterPos, rgb);
-        }
-    }
-
-    exit:
-    FastLED.show();
-}
-
-void setupWifi() {
-    wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-    wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
-
-    mqttClient.onConnect(onMqttConnect);
-    mqttClient.onDisconnect(onMqttDisconnect);
-    mqttClient.onMessage(onMqttMessage);
-    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-
-    connectToWifi();
-}
-
-void startupScanAnimation() {
-    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
-        setLetterColor(i, STARTUP_ANIMATION_COLOR_BACKGROUND);
-    }
-
-    for (uint16_t i = 0; i < NUM_LETTERS; i++) {
-        setLetterColor(i, STARTUP_ANIMATION_COLOR_MOVING);
-        FastLED.show();
-        setLetterColor(i, STARTUP_ANIMATION_COLOR_TRAIL);
-        delay(STARTUP_ANIMATION_DELAY);
-    }
-
-    // Fade out
-    for (int j = 0; j < 40; j++) {
-        for (int i = 0; i < NUM_LEDS; i++) {
-            leds[i].r = (uint8_t) (leds[i].r * .9f);
-            leds[i].g = (uint8_t) (leds[i].g * .9f);
-            leds[i].b = (uint8_t) (leds[i].b * .9f);
-        }
-        FastLED.show();
-        delay(STARTUP_ANIMATION_DELAY);
-    }
-}
-
 void setup() {
-    FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS);
     configTime(TIMEZONE, "pool.ntp.org");
 
-    startupScanAnimation();
-
-    setLetterColor(0, 0x00FF00);
-    FastLED.show();
+    startup_animation();
 
     setupWifi();
 
     // wait for MQTT and network time
-    while (!mqttClient.connected() || time(NULL) < 1000) {
+    while (
+        #ifdef MQTT_ENABLED
+        !mqttClient.connected() ||
+        #endif
+        time(NULL) < 1000
+    ) {
         ArduinoOTA.handle();
         delay(10);
     }
-
-    // this doesn't work, why?
-    writeWord(HALLO);
-    writeWordsToLeds();
-    delay(500);
-
-    clearWords();
-    writeWord(ROBIN);
-    writeWordsToLeds();
-    delay(500);
-
-    display_state = STATE_BLANK;
-    ha_effect = INITIAL_EFFECT;
 }
 
 void loop() {
     ArduinoOTA.handle();
 
-    if (tick % 1024 == 0) {
+    #ifdef MQTT_ENABLED
+    if (millis() % 1024 == 0) {
         mqttClient.publish(MQTT_TOPIC_HA_AVAILABILITY, MQTT_QOS_AT_MOST_ONCE, false, "online");
     }
 
-    if (tick % 64 == 0 && ha_state_need_publish) {
+    if (millis() % 64 == 0 && ha_state_need_publish) {
         publishState();
     }
+    #endif
 
-    switch(display_state) {
-        case STATE_BLANK: {
-            if (!ha_state) {
-                break; // clock is turned off
-            }
-
-            log("Draw new");
-            display_state = STATE_DRAW_NEW;
-            letter_display_limit = 0;
-            currentTimeMagic = getTimeMagic();
-            writeTimeToWords();
-            break;
-        } case STATE_DRAW_NEW: {
-            FastLED.setBrightness(ha_brightness);
-
-            if (tick % 16 == 0) {
-                letter_display_limit++;
-                if (letter_display_limit > current_words_letter_count) {
-                    // All letters are now displayed, go to constant display state.
-                    display_state = STATE_DISPLAY_TIME;
-                }
-            }
-
-            break;
-        } case STATE_DISPLAY_TIME: {
-            FastLED.setBrightness(ha_brightness);
-
-            if (!ha_state ||
-                    (tick % 512 == 0 && getTimeMagic() != currentTimeMagic)) {
-                log(ha_state ? "Time changed, fade out" : "Turned off, fade out");
-                display_state = STATE_FADE_OUT;
-            }
-
-            break;
-        } case STATE_FADE_OUT: {
-            const uint8_t brightness = FastLED.getBrightness();
-            if (brightness > 4) {
-                FastLED.setBrightness(brightness - 4);
-            } else {
-                clearWords();
-                display_state = STATE_BLANK;
-            }
-
-            break;
-        } default: {
-            log("Unknown display state: " + String(display_state));
-            delay(500); // prevent log spam
-            break;
-        }
-    }
-
-    writeWordsToLeds();
-
-    tick = (tick + 1) & 0xFFFF;
+    led_loop(ha_on, ha_hue, ha_saturation, ha_brightness, ha_effect);
 
     delay(10);
 }

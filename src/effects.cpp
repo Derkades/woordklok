@@ -1,4 +1,3 @@
-#include <string.h>
 #include "effects.h"
 
 const char *led_effect_names[] {
