@@ -5,17 +5,16 @@
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
-#include <NTPClient.h>
 #include <Ticker.h>
 #include <AsyncMqttClient.h>
 #include <ArduinoOTA.h>
-#include <Timezone.h>
 #include <ArduinoJson.h>
+#include <time.h>
 
 #include "led_positions.h"
 #include "secrets.h"
 #include "effects.h"
+#include "config.h"
 
 #define MQTT_TOPIC_BASE            "woordklok"
 #define MQTT_TOPIC_LOG             MQTT_TOPIC_BASE "/" "log"
@@ -27,30 +26,6 @@
 #define MQTT_QOS_AT_MOST_ONCE 0
 #define MQTT_QOS_AT_LEAST_ONCE 1
 #define MQTT_QOS_EXACTLY_ONCE 2
-
-#define RAINBOW_SATURATION 192
-
-#define STARTUP_ANIMATION_DELAY 20
-#define STARTUP_ANIMATION_COLOR_MOVING 0xFFFFFF
-#define STARTUP_ANIMATION_COLOR_TRAIL 0x602000
-#define STARTUP_ANIMATION_COLOR_BACKGROUND 0x200000
-
-#define NTP_UPDATE_INTERVAL 3600*1000
-
-#define HUE_SHIFT_DEG 90
-#define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
-
-#define BACKGROUND_DIM 2 // background brightness reduction factor (>=1)
-#define RAIN_SPEED 6 // higher is faster
-
-#define INITIAL_EFFECT EFFECT_SHOWER_COLOR_FADE
-
-const TimeChangeRule SUMMER = {"CEST", Last, Sun, Mar, 2, 120};
-const TimeChangeRule WINTER = {"CET ", Last, Sun, Oct, 3, 60};
-Timezone localTimezone(SUMMER, WINTER);
-
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, NTP_UPDATE_INTERVAL);
 
 AsyncMqttClient mqttClient;
 Ticker mqttReconnectTimer;
@@ -72,20 +47,19 @@ CRGB leds[222];
 short currentTimeMagic = -1;
 
 std::list<word_t> current_words = {};
-unsigned short current_words_letter_count = 0;
+uint16_t current_words_letter_count = 0;
 
-unsigned short tick = 0;
+uint16_t tick = 0;
 uint16_t letter_display_limit = UINT16_MAX;
 
 DisplayState display_state = STATE_BOOT;
 
-
 // Home Assistant light settings
 LedEffect ha_effect         = EFFECT_STATIC;  // Must initially be STATIC for boot effects. Later changed to INITIAL_EFFECT.
 bool  ha_state              = true;
-uint8_t ha_hue              = 192;
-uint8_t ha_saturation       = 192;
-uint8_t ha_brightness       = 255;
+uint8_t ha_hue              = INITIAL_HUE;
+uint8_t ha_saturation       = INITIAL_HUE;
+uint8_t ha_brightness       = INITIAL_BRIGHTNESS;
 bool  ha_state_need_publish = true;
 
 void setLetterColor(uint16_t letterPos, CRGB &rgb) {
@@ -113,7 +87,7 @@ word_t hourWord(const int &hour) {
 }
 
 int getTimeMagic() {
-    int minute = timeClient.getMinutes();
+    uint8_t minute = (uint8_t) ((time(NULL) / 60ULL) % 60ULL);
     return (int) roundf(minute / 5.0f);
 }
 
@@ -128,7 +102,7 @@ void writeWord(word_t word) {
 }
 
 void writeTimeToWords() {
-    int hour = timeClient.getHours();
+    uint8_t hour = (uint8_t) (time(NULL) / 3600ULL);
 
     clearWords();
 
@@ -212,7 +186,7 @@ void writeTimeToWords() {
             break;
         case 12:
             log(String(hour+1) + " uur");
-            writeWord(hourWord(hour+1));
+            writeWord(hourWord(hour + 1));
             writeWord(UUR);
             break;
         default:
@@ -505,11 +479,6 @@ void setupWifi() {
     connectToWifi();
 }
 
-void setDstOffset() {
-    int offsetMinutes = localTimezone.locIsDST(timeClient.getEpochTime()) ? SUMMER.offset : WINTER.offset;
-    timeClient.setTimeOffset(offsetMinutes * 60);
-}
-
 void startupScanAnimation() {
     for (uint16_t i = 0; i < NUM_LETTERS; i++) {
         setLetterColor(i, STARTUP_ANIMATION_COLOR_BACKGROUND);
@@ -536,6 +505,7 @@ void startupScanAnimation() {
 
 void setup() {
     FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS);
+    configTime(TIMEZONE, "pool.ntp.org");
 
     startupScanAnimation();
 
@@ -543,15 +513,12 @@ void setup() {
     FastLED.show();
 
     setupWifi();
-    while (!mqttClient.connected()) {
+
+    // wait for MQTT and network time
+    while (!mqttClient.connected() || time(NULL) < 1000) {
         ArduinoOTA.handle();
         delay(10);
     }
-
-    timeClient.update();
-    log("Found time: " + timeClient.getFormattedTime());
-    setDstOffset();
-    log("With DST offset: " + timeClient.getFormattedTime());
 
     // this doesn't work, why?
     writeWord(HALLO);
@@ -569,7 +536,6 @@ void setup() {
 
 void loop() {
     ArduinoOTA.handle();
-    timeClient.update();
 
     if (tick % 1024 == 0) {
         mqttClient.publish(MQTT_TOPIC_HA_AVAILABILITY, MQTT_QOS_AT_MOST_ONCE, false, "online");
