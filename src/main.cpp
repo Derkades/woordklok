@@ -40,6 +40,9 @@
 #define HUE_SHIFT_DEG 90
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 
+#define BACKGROUND_DIM 2 // background brightness reduction factor (>=1)
+#define RAIN_SPEED 6 // higher is faster
+
 #define INITIAL_EFFECT EFFECT_SHOWER_COLOR_FADE
 
 const TimeChangeRule SUMMER = {"CEST", Last, Sun, Mar, 2, 120};
@@ -58,6 +61,7 @@ Ticker wifiReconnectTimer;
 
 enum DisplayState {
     STATE_BOOT,
+    STATE_BLANK,
     STATE_FADE_OUT,
     STATE_DRAW_NEW,
     STATE_DISPLAY_TIME,
@@ -71,7 +75,6 @@ std::list<word_t> current_words = {};
 unsigned short current_words_letter_count = 0;
 
 unsigned short tick = 0;
-short led_brightness = 255; // TODO use FastLED scale
 uint16_t letter_display_limit = UINT16_MAX;
 
 DisplayState display_state = STATE_BOOT;
@@ -80,9 +83,9 @@ DisplayState display_state = STATE_BOOT;
 // Home Assistant light settings
 LedEffect ha_effect         = EFFECT_STATIC;  // Must initially be STATIC for boot effects. Later changed to INITIAL_EFFECT.
 bool  ha_state              = true;
-short ha_hue                = 192;
-short ha_saturation         = 192;
-short ha_brightness         = 255;
+uint8_t ha_hue              = 192;
+uint8_t ha_saturation       = 192;
+uint8_t ha_brightness       = 255;
 bool  ha_state_need_publish = true;
 
 void setLetterColor(uint16_t letterPos, CRGB &rgb) {
@@ -377,12 +380,12 @@ uint32_t hash(uint32_t x) {
 }
 
 void writeWordsToLeds() {
-    short hue = ha_hue;
+    uint8_t hue = ha_hue;
 
     switch (ha_effect) {
         case EFFECT_COLOR_FADE:
         case EFFECT_SHOWER_COLOR_FADE:
-            hue = (hue + (tick >> 2)) % 256;
+            hue = qadd8(hue, tick >> 2);
             break;
         case EFFECT_STATIC:
         case EFFECT_RAINBOW:
@@ -421,10 +424,10 @@ void writeWordsToLeds() {
 
                 const short a = 3821;
                 const short b = a - (tick + hash(i)) % a;
-                if (b <= 2*led_brightness) {
+                if (b <= 2*UINT8_MAX) {
                     uint8_t v = (uint8_t) b;
-                    if (v > led_brightness) {
-                        v = 2*led_brightness - v;
+                    if (v > UINT8_MAX) {
+                        v = 2*UINT8_MAX - v;
                     }
                     rgb.setHSV(complementary_hue, ha_saturation, v);
                 }
@@ -434,22 +437,15 @@ void writeWordsToLeds() {
             case EFFECT_SHOWER:
             case EFFECT_SHOWER_COLOR_FADE:
             {
-                const short rain_speed = 6; // higher is faster
-                const float dim_constant = .5f; // dimness of background compared to foreground
-
-                short row;
-                short col;
+                uint8_t row;
+                uint8_t col;
                 letterToRowCol(i, &row, &col);
 
                 const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
-                // const short a = 1249;
-                const short v = (rain_speed*tick - 50*row + hash(col)) % 13000 % 1200;
+                const short v = (RAIN_SPEED*tick - 50*row + hash(col)) % 13000 % 1200;
                 if (v < 256) {
-                    // Dim according to led brightness (but slightly dimmer)
-                    const float dim = (led_brightness / 256.0f) * dim_constant;
-                    const uint8_t v2 = (uint8_t) (v * dim);
-                    rgb.setHSV(complementary_hue, ha_saturation, v2);
+                    rgb.setHSV(complementary_hue, ha_saturation, v / BACKGROUND_DIM);
                 }
                 break;
             }
@@ -474,16 +470,16 @@ void writeWordsToLeds() {
                 case EFFECT_TEST_PATTERN:
                 case EFFECT_STATIC:
                 case EFFECT_COLOR_FADE:
-                    rgb.setHSV(hue, ha_saturation, led_brightness);
+                    rgb.setHSV(hue, ha_saturation, UINT8_MAX);
                     break;
                 case EFFECT_RAINBOW:
-                    rgb.setHSV(((tick / 4) + 16*letterPos) & 0xFF, RAINBOW_SATURATION, led_brightness);
+                    rgb.setHSV(((tick / 4) + 16*letterPos) & 0xFF, RAINBOW_SATURATION, UINT8_MAX);
                     break;
                 case EFFECT_SPARKLE_STATIC:
                 case EFFECT_SHOWER:
                 case EFFECT_SHOWER_COLOR_FADE:
                     CRGB rgb_add;
-                    rgb_add.setHSV(hue, ha_saturation, led_brightness);
+                    rgb_add.setHSV(hue, ha_saturation, UINT8_MAX);
                     // Add color to existing background color
                     rgb += rgb_add;
                     break;
@@ -567,11 +563,8 @@ void setup() {
     writeWordsToLeds();
     delay(500);
 
-    letter_display_limit = 0;
-    display_state = STATE_DRAW_NEW;
+    display_state = STATE_BLANK;
     ha_effect = INITIAL_EFFECT;
-    currentTimeMagic = getTimeMagic();
-    writeTimeToWords();
 }
 
 void loop() {
@@ -582,31 +575,25 @@ void loop() {
         mqttClient.publish(MQTT_TOPIC_HA_AVAILABILITY, MQTT_QOS_AT_MOST_ONCE, false, "online");
     }
 
-    if (tick % 64 == 0) {
+    if (tick % 64 == 0 && ha_state_need_publish) {
         publishState();
     }
 
     switch(display_state) {
-        case STATE_FADE_OUT: {
-            led_brightness -= 4;
-
-            if (led_brightness < 0) {
-                led_brightness = 0;
-
-                if (ha_state) {
-                    log("Draw new");
-                    // Display is now blank, write new time to letters
-                    // array then start drawing letters one by one
-                    display_state = STATE_DRAW_NEW;
-                    letter_display_limit = 0;
-                    led_brightness = ha_brightness;
-                    currentTimeMagic = getTimeMagic();
-                    writeTimeToWords();
-                }
+        case STATE_BLANK: {
+            if (!ha_state) {
+                break; // clock is turned off
             }
 
+            log("Draw new");
+            display_state = STATE_DRAW_NEW;
+            letter_display_limit = 0;
+            currentTimeMagic = getTimeMagic();
+            writeTimeToWords();
             break;
         } case STATE_DRAW_NEW: {
+            FastLED.setBrightness(ha_brightness);
+
             if (tick % 16 == 0) {
                 letter_display_limit++;
                 if (letter_display_limit > current_words_letter_count) {
@@ -617,7 +604,7 @@ void loop() {
 
             break;
         } case STATE_DISPLAY_TIME: {
-            led_brightness = ha_brightness;
+            FastLED.setBrightness(ha_brightness);
 
             if (!ha_state ||
                     (tick % 512 == 0 && getTimeMagic() != currentTimeMagic)) {
@@ -625,8 +612,18 @@ void loop() {
                 display_state = STATE_FADE_OUT;
             }
 
-            break; }
-        default: {
+            break;
+        } case STATE_FADE_OUT: {
+            const uint8_t brightness = FastLED.getBrightness();
+            if (brightness > 4) {
+                FastLED.setBrightness(brightness - 4);
+            } else {
+                clearWords();
+                display_state = STATE_BLANK;
+            }
+
+            break;
+        } default: {
             log("Unknown display state: " + String(display_state));
             delay(500); // prevent log spam
             break;

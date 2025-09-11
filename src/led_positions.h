@@ -49,7 +49,7 @@ word_t HOURS[] = {
     EEN, TWEE, DRIE, VIER, VIJF_2, ZES, ZEVEN, ACHT, NEGEN, TIEN_2, ELF, TWAALF
 };
 
-void letterToRowCol(short letter, short *row, short *col) {
+void letterToRowCol(uint16_t letter, uint8_t *row, uint8_t *col) {
     *row = (NUM_ROWS-1) - letter / NUM_COLS;
     // every other row has swapped direction
     *col = *row % 2 == 0 ? letter % NUM_COLS : (NUM_COLS-1) - (letter % NUM_COLS);
