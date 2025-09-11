@@ -308,17 +308,19 @@ void onMqttMessage(char* topic, char* payload_unsafe, AsyncMqttClientMessageProp
 }
 
 void publishState() {
-    const int capacity = JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(2);
-    StaticJsonDocument<capacity> doc;
+    StaticJsonDocument<JSON_OBJECT_SIZE(5)> doc;
     doc["state"] = ha_state ? "ON" : "OFF";
     doc["effect"] = ledEffectToString(ha_effect);
     doc["brightness"] = ha_brightness;
-    // doc["color_mode"] = "hs";
     JsonObject color = doc.createNestedObject("color");
     color["h"] = min(360.0f, max(0.0f, ha_hue / 256.0f * 360.0f));
     color["s"] = min(100.0f, max(0.0f, ha_saturation / 256.0f * 100.0f));
 
     char buf[128];
+    if (measureJson(doc) > 128) {
+        log("json too large for buffer");
+        return;
+    }
     serializeJson(doc, buf);
     mqttClient.publish(MQTT_TOPIC_HA_STATE, MQTT_QOS_AT_MOST_ONCE, false, buf);
 }
