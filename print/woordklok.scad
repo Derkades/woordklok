@@ -3,17 +3,17 @@ include <BOSL2/screws.scad>
 
 e = 0.01;
 
-x_led = 16.7;
+x_led = 16.67;
 z_led = 10;
 
-t = 1.4;
+t = 1.2;
 t_grid = 0.8;
-t_trans = 0.8; // thickness of transparent layer (0 to disable)
+t_trans = 0.4; // thickness of transparent layer (0 to disable)
 t_led = 1.4;
 
 text_size = x_led * 0.7;
 // Install a stencil font. Copy font in Help > Font List
-text_font = "Bunker Stencil:style=Regular";
+text_font = "Bunker Stencil";
 
 frame = 9; // extra space around edges
 
@@ -30,7 +30,7 @@ txt = [
     "VOORLIKDEEN",
     "TWEEONJDRIE",
     "VIERVIJFZES",
-    "ZEVENONEGEN",
+    "ZEVENENEGEN",
     "ACHTIENSELF",
     "TWAALFBFUUR",
 ];
@@ -41,8 +41,6 @@ leds_y = len(txt);
 w = leds_x * x_led; // width, excluding frame
 h = leds_y * x_led; // height, excluding frame
 
-render_text = true; // set to false to speed up rendering
-
 back_screw = "M3";
 
 // nicer circles
@@ -50,38 +48,36 @@ $fa = 0.5;
 $fs = 0.5;
 
 module main() {
-    t_base = t-t_trans;
     difference() {
         // base plate with letters
-        cuboid([w+frame*2, h+frame*2, t_base], anchor=TOP);
+        color("orange")
+        cuboid([w+frame*2, h+frame*2, t], anchor=TOP);
 
         // letters
-        if (render_text) {
-            right(w / 2 - x_led/2)
-            back(h / 2 - x_led)
-            for (i = [0:leds_y]) {
-                up(0.001)
-                fwd(i * x_led-text_size/2+t_grid*2)
-                
-                mirror([1, 0, 0])
-                for (j = [0:leds_x-1]) {
-                    right(j * x_led)
-                    text3d(txt[i][j], h=t_base+0.002, anchor=TOP, size=text_size, font=text_font);
-                }
+        right(w / 2 - x_led/2)
+        back(h / 2 - x_led)
+        for (i = [0:leds_y]) {
+            up(0.001)
+            fwd(i * x_led-text_size/2+t_grid*2)
+            
+            mirror([1, 0, 0])
+            for (j = [0:leds_x-1]) {
+                right(j * x_led)
+                text3d(txt[i][j], h=t+0.002, anchor=TOP, size=text_size, font=text_font);
             }
         }
     }
 
     // transparent base plate
     recolor("blue")
-    down(t_base)
+    down(t)
     cuboid([w+2*frame, h+2*frame, t_trans], anchor=TOP);
 
     // grid: horizontal rules
     back(h / 2)
     for (i = [0:leds_y]) {
         fwd(i * (x_led - t_grid / leds_y))
-        cuboid([w, t_grid, z_led], anchor=BOTTOM+BACK);
+        cuboid([w+frame*2, t_grid, z_led], anchor=BOTTOM+BACK);
     }
 
     // grid: vertical rules
@@ -89,7 +85,7 @@ module main() {
         left(w / 2)
         for (i = [0:leds_x]) {
             right(i * (x_led - t_grid / leds_x))
-            cuboid([t_grid, h, z_led], anchor=BOTTOM+LEFT);
+            cuboid([t_grid, h+frame*2, z_led], anchor=BOTTOM+LEFT);
         }
         
         // make room for led strips
@@ -101,7 +97,7 @@ module main() {
     }
 
     // outer frame
-    recolor("green")
+    *recolor("green")
     difference() {
         union() {
             back(h/2+frame)
@@ -134,7 +130,7 @@ module main() {
         for (y = [(h+frame)/2, (h+frame)/-2]) {
             translate([x, y, 0])
             difference() {
-                cuboid([frame, frame, d-t_grid], anchor=BOTTOM);
+                cuboid([frame, frame, d-t], anchor=BOTTOM);
                 
                 screw_hole(back_screw, length=d, anchor=BOTTOM);
                 
@@ -186,9 +182,9 @@ module back_cover() {
             union() {
                 cuboid([w+2*frame, h+2*frame, t], anchor=BOTTOM);
                 
-                rect_tube(h=t_grid, size=[w+2*frame-t*2-0.2, h+2*frame-t*2-0.2], wall=t_grid, anchor=TOP);
+                rect_tube(h=t, size=[w+2*frame-t*2-0.2, h+2*frame-t*2-0.2], wall=t, anchor=TOP);
                 
-                tube(h=d-z_led-t_grid, od=min(h, w)*0.7, wall=t_grid, anchor=TOP);
+                rect_tube(h=d-z_led-t_grid, size=[w/2, h/2], wall=t_grid, anchor=TOP);
                 
                 for (x = [(w+frame)/2, (w+frame)/-2]) {
                     for (y = [(h+frame)/2, (h+frame)/-2]) {
@@ -211,5 +207,5 @@ module back_cover() {
 
 
 main();
-//light_cover();
-//back_cover();
+light_cover();
+back_cover();
