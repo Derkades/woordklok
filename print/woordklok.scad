@@ -22,17 +22,29 @@ d = 20; // depth of entire module (z direction)
 d_cable = 5; // cable cutout diameter
 cable_side = false;
 
+//txt = [
+//    "HETUISEVIJF",
+//    "TIENHRAVOOR",
+//    "OVERAOKWART",
+//    "HALFLBAOVER",
+//    "VOORLIKDEEN",
+//    "TWEEONJDRIE",
+//    "VIERVIJFZES",
+//    "ZEVENENEGEN",
+//    "ACHTIENSELF",
+//    "TWAALFBFUUR",
+//];
+
 txt = [
-    "HETUISEVIJF",
-    "TIENHRAVOOR",
-    "OVERAOKWART",
-    "HALFLBAOVER",
-    "VOORLIKDEEN",
-    "TWEEONJDRIE",
-    "VIERVIJFZES",
-    "ZEVENENEGEN",
-    "ACHTIENSELF",
-    "TWAALFBFUUR",
+    "HETISUVIJF",
+    "TIENLKWART",
+    "OVERSKVOOR",
+    "HALFZESEEN",
+    "TWEEGIDRIE",
+    "VIERBZEVEN",
+    "VIJFENEGEN",
+    "ACHTIENELF",
+    "TWAALFYUUR",
 ];
 
 leds_x = len(txt[0]);
@@ -59,7 +71,7 @@ module main() {
         for (i = [0:leds_y]) {
             up(0.001)
             fwd(i * x_led-text_size/2+t_grid*2)
-            
+
             mirror([1, 0, 0])
             for (j = [0:leds_x-1]) {
                 right(j * x_led)
@@ -87,7 +99,7 @@ module main() {
             right(i * (x_led - t_grid / leds_x))
             cuboid([t_grid, h+frame*2, z_led], anchor=BOTTOM+LEFT);
         }
-        
+
         // make room for led strips
         back(h / 2)
         for (i = [1:leds_y]) {
@@ -97,7 +109,7 @@ module main() {
     }
 
     // outer frame
-    *recolor("green")
+    recolor("green")
     difference() {
         union() {
             back(h/2+frame)
@@ -110,7 +122,7 @@ module main() {
             right(w/2+frame)
             cuboid([t, h+2*frame, d], anchor=BOTTOM+RIGHT);
         }
-        
+
         // cable cutout
         up((d+t+t_trans)/2)
         if (cable_side) {
@@ -124,21 +136,21 @@ module main() {
             cyl(d=d_cable, h=t, anchor=TOP+BACK);
         }
     }
-    
+
     // stands for screws
     for (x = [(w+frame)/2, (w+frame)/-2]) {
         for (y = [(h+frame)/2, (h+frame)/-2]) {
             translate([x, y, 0])
             difference() {
                 cuboid([frame, frame, d-t], anchor=BOTTOM);
-                
+
                 screw_hole(back_screw, length=d, anchor=BOTTOM);
-                
+
                 up(d/2)
                 nut_trap_side(frame/2, back_screw, spin=x>0 ? 180 : 0);
             }
         }
-    } 
+    }
 }
 
 module light_cover() {
@@ -151,21 +163,21 @@ module light_cover() {
                     right(x * x_led)
                     cuboid([t_grid*3+0.2, h, t_grid], anchor=TOP);
                 }
-               
+
                 fwd(h / 2 + 0.1)
                 for (y = [1:leds_x-1]) {
                     back(y * x_led)
                     cuboid([w, t_grid, t_grid], anchor=TOP+BACK);
                 }
             }
-            
+
             position(BOTTOM) {
                 left(w / 2 - t_grid / 2)
                 for (x = [0:leds_x]) {
                     right(x * x_led)
                     cuboid([t_grid+0.2, h, t_grid], anchor=TOP);
                 }
-                
+
                 fwd(h / 2 + 0.1)
                 for (y = [0:leds_x]) {
                     back(y * x_led)
@@ -181,11 +193,11 @@ module back_cover() {
         difference() {
             union() {
                 cuboid([w+2*frame, h+2*frame, t], anchor=BOTTOM);
-                
+
                 rect_tube(h=t, size=[w+2*frame-t*2-0.2, h+2*frame-t*2-0.2], wall=t, anchor=TOP);
-                
+
                 rect_tube(h=d-z_led-t_grid, size=[w/2, h/2], wall=t_grid, anchor=TOP);
-                
+
                 for (x = [(w+frame)/2, (w+frame)/-2]) {
                     for (y = [(h+frame)/2, (h+frame)/-2]) {
                         translate([x, y, 0])
@@ -193,7 +205,7 @@ module back_cover() {
                     }
                 }
             }
-            
+
             for (x = [(w+frame)/2, (w+frame)/-2]) {
                 for (y = [(h+frame)/2, (h+frame)/-2]) {
                     translate([x, y, 0])
@@ -201,11 +213,11 @@ module back_cover() {
                 }
             }
         }
-      
+
     }
 }
 
 
 main();
-light_cover();
-back_cover();
+//light_cover();
+//back_cover();
