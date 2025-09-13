@@ -3,13 +3,14 @@ include <BOSL2/screws.scad>
 
 e = 0.01;
 
-x_led = 16.67;
+x_led = 16.60;
 z_led = 10;
 
-t = 1.2;
-t_grid = 0.8;
+t = 1.6;
+t_grid = 1.2;
 t_trans = 0.4; // thickness of transparent layer (0 to disable)
-t_led = 1.4;
+t_led = 0.6;
+t_led_solder = 1.8;
 
 text_size = x_led * 0.7;
 // Install a stencil font. Copy font in Help > Font List
@@ -69,13 +70,13 @@ module main() {
         right(w / 2 - x_led/2)
         back(h / 2 - x_led)
         for (i = [0:leds_y]) {
-            up(0.001)
+            up(e)
             fwd(i * x_led-text_size/2+t_grid*2)
 
             mirror([1, 0, 0])
             for (j = [0:leds_x-1]) {
                 right(j * x_led)
-                text3d(txt[i][j], h=t+0.002, anchor=TOP, size=text_size, font=text_font);
+                text3d(txt[i][j], h=t+2*e, anchor=TOP, size=text_size, font=text_font);
             }
         }
     }
@@ -104,7 +105,14 @@ module main() {
         back(h / 2)
         for (i = [1:leds_y]) {
             fwd(i * (x_led - t_grid / leds_y))
-            cuboid([h, t_led, z_led+e], anchor=BOTTOM+FRONT);
+            cuboid([w - t_grid, t_led, z_led+e], anchor=BOTTOM+FRONT) {
+                position(LEFT+FRONT)
+                cuboid([t_grid*2, t_led_solder, z_led+e], anchor=FRONT);
+                
+                position(RIGHT+FRONT)
+                cuboid([t_grid*2, t_led_solder, z_led+e], anchor=FRONT);
+            }
+            
         }
     }
 
