@@ -41,10 +41,11 @@ word_t HOURS[] = {
     EEN, TWEE, DRIE, VIER, VIJF_2, ZES, ZEVEN, ACHT, NEGEN, TIEN_2, ELF, TWAALF
 };
 
-static DisplayState display_state = STATE_BLANK;
+static DisplayState display_state = STATE_BOOT;
 static CRGB leds[222];
 static uint16_t tick;
-static short currentTimeMagic = -1;
+static uint8_t currentHour = 0;
+static uint8_t currentTimeStep = 0;
 static std::list<word_t> current_words = {};
 static uint16_t current_words_letter_count = 0;
 static uint16_t letter_display_limit = UINT16_MAX;
@@ -72,11 +73,6 @@ static word_t hourWord(const int &hour) {
     return HOURS[(mod == 0 ? 12 : mod) - 1];
 }
 
-static int getTimeMagic() {
-    uint8_t minute = (uint8_t) ((time(NULL) / 60ULL) % 60ULL);
-    return (int) roundf(minute / 5.0f);
-}
-
 static void clearWords() {
     current_words.clear();
     current_words_letter_count = 0;
@@ -88,95 +84,93 @@ static void writeWord(word_t word) {
 }
 
 static void writeTimeToWords() {
-    uint8_t hour = (uint8_t) (time(NULL) / 3600ULL);
-
     clearWords();
 
     writeWord(HET);
     writeWord(IS);
 
-    switch(currentTimeMagic) {
+    switch(currentTimeStep) {
         case 0:
-            log(String(hour) + " uur");
-            writeWord(hourWord(hour));
+            log(String(currentHour) + " uur");
+            writeWord(hourWord(currentHour));
             writeWord(UUR);
             break;
         case 1:
-            log("Vijf over " + String(hour));
+            log("Vijf over " + String(currentHour));
             writeWord(VIJF);
-            writeWord(hour > 6 ? OVER_2 : OVER);
-            writeWord(hourWord(hour));
+            writeWord(currentHour > 6 ? OVER_2 : OVER);
+            writeWord(hourWord(currentHour));
             break;
         case 2:
-            log("Tien over " + String(hour));
+            log("Tien over " + String(currentHour));
             writeWord(TIEN);
-            writeWord(hour > 6 ? OVER_2 : OVER);
-            writeWord(hourWord(hour));
+            writeWord(currentHour > 6 ? OVER_2 : OVER);
+            writeWord(hourWord(currentHour));
             break;
         case 3:
-            log("Kwart over " + String(hour));
+            log("Kwart over " + String(currentHour));
             writeWord(KWART);
             writeWord(OVER_2);
-            writeWord(hourWord(hour));
+            writeWord(hourWord(currentHour));
             break;
         case 4:
-            log("Tien voor half " + String(hour + 1));
+            log("Tien voor half " + String(currentHour + 1));
             writeWord(TIEN);
             writeWord(VOOR);
             writeWord(HALF);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 5:
-            log("Vijf voor half " + String(hour + 1));
+            log("Vijf voor half " + String(currentHour + 1));
             writeWord(VIJF);
             writeWord(VOOR);
             writeWord(HALF);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 6:
-            log("Half " + String(hour + 1));
+            log("Half " + String(currentHour + 1));
             writeWord(HALF);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 7:
-            log("5 over half " + String(hour + 1));
+            log("5 over half " + String(currentHour + 1));
             writeWord(VIJF);
             writeWord(OVER);
             writeWord(HALF);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 8:
-            log("10 over half " + String(hour + 1));
+            log("10 over half " + String(currentHour + 1));
             writeWord(TIEN);
             writeWord(OVER);
             writeWord(HALF);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 9:
-            log("Kwart voor " + String(hour + 1));
+            log("Kwart voor " + String(currentHour + 1));
             writeWord(KWART);
             writeWord(VOOR_2);
-            writeWord(hourWord(hour + 1));
+            writeWord(hourWord(currentHour + 1));
             break;
         case 10:
-            log("Tien voor " + String(hour + 1));
+            log("Tien voor " + String(currentHour + 1));
             writeWord(TIEN);
-            writeWord(hour > 6 ? VOOR_2 : VOOR);
-            writeWord(hourWord(hour + 1));
+            writeWord(currentHour > 6 ? VOOR_2 : VOOR);
+            writeWord(hourWord(currentHour + 1));
             break;
         case 11:
-            log("Vijf voor " + String(hour + 1));
+            log("Vijf voor " + String(currentHour + 1));
             writeWord(VIJF);
-            writeWord(hour > 6 ? VOOR_2 : VOOR);
-            writeWord(hourWord(hour + 1));
+            writeWord(currentHour > 6 ? VOOR_2 : VOOR);
+            writeWord(hourWord(currentHour + 1));
             break;
         case 12:
-            log(String(hour+1) + " uur");
-            writeWord(hourWord(hour + 1));
+            log(String(currentHour + 1) + " uur");
+            writeWord(hourWord(currentHour + 1));
             writeWord(UUR);
             break;
         default:
-            log("Error, unknown magic: " + String(currentTimeMagic));
+            log("Error, unknown step: " + String(currentTimeStep));
             break;
     }
 }
@@ -192,14 +186,9 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
     switch (effect) {
         case EFFECT_COLOR_FADE:
         case EFFECT_SHOWER_COLOR_FADE:
-            hue = qadd8(hue, tick >> 2);
+            hue = (hue + (tick >> 2)) & 0xFF;
             break;
-        case EFFECT_STATIC:
-        case EFFECT_RAINBOW:
-        case EFFECT_SPARKLE_STATIC:
-        case EFFECT_SHOWER:
-        case EFFECT_TEST_PATTERN:
-            // Use configured hue as-is
+        default:
             break;
     }
 
@@ -252,7 +241,7 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
 
                 const short v = (RAIN_SPEED*tick - 50*row + hash(col)) % 13000 % 1200;
                 if (v < 256) {
-                    rgb.setHSV(complementary_hue, saturation, v / BACKGROUND_DIM);
+                    rgb.setHSV(complementary_hue, saturation, (256 - v) / BACKGROUND_DIM);
                 }
                 break;
             }
@@ -305,19 +294,32 @@ void led_setup() {
 }
 
 void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {
+    // based on getLocalTime, but without blocking
+    tm tm;
+    time_t t;
+    time(&t);
+    localtime_r(&t, &tm);
+
+    uint8_t timeStep = (uint8_t) roundf(tm.tm_min / 5.0f);
+
     switch(display_state) {
-        case STATE_BLANK: {
+        case STATE_BOOT:
+            // wait for network time
+            if (tm.tm_year > (2020 - 1900)) {
+                display_state = STATE_BLANK;
+            }
+            break;
+        case STATE_BLANK:
             if (!on) {
                 break; // clock is turned off
             }
-
-            log("Draw new");
             display_state = STATE_DISPLAY_TIME;
             letter_display_limit = 0;
-            currentTimeMagic = getTimeMagic();
+            currentTimeStep = timeStep;
+            currentHour = tm.tm_hour;
             writeTimeToWords();
             break;
-        } case STATE_DISPLAY_TIME: {
+        case STATE_DISPLAY_TIME:
             FastLED.setBrightness(brightness);
 
             if (letter_display_limit < NUM_LETTERS && tick % 16 == 0) {
@@ -329,13 +331,13 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
                 display_state = STATE_FADE_OUT;
             }
 
-            if (getTimeMagic() != currentTimeMagic) {
+            if (timeStep != currentTimeStep) {
                 log("Time changed, fade out");
                 display_state = STATE_FADE_OUT;
             }
 
             break;
-        } case STATE_FADE_OUT: {
+        case STATE_FADE_OUT: {
             const uint8_t brightness = FastLED.getBrightness();
             if (brightness > 4) {
                 FastLED.setBrightness(brightness - 4);
@@ -345,11 +347,10 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
             }
 
             break;
-        } default: {
+        } default:
             log("Unknown display state: " + String(display_state));
             delay(500); // prevent log spam
             break;
-        }
     }
 
     writeWordsToLeds(hue, saturation, effect);

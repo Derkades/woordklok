@@ -200,22 +200,10 @@ void setupOta() {
 }
 
 void setup() {
+    led_setup();
     configTime(TIMEZONE, "pool.ntp.org");
-
     startup_animation();
-
     setupWifi();
-
-    // wait for MQTT and network time
-    while (
-        #ifdef MQTT_ENABLED
-        !mqttClient.connected() ||
-        #endif
-        time(NULL) < 1000
-    ) {
-        ArduinoOTA.handle();
-        delay(10);
-    }
 }
 
 void loop() {

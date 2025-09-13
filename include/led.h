@@ -23,6 +23,7 @@
 typedef uint16_t *word_t;
 
 enum DisplayState {
+    STATE_BOOT,
     STATE_BLANK,
     STATE_FADE_OUT,
     STATE_DISPLAY_TIME,
