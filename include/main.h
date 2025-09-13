@@ -10,7 +10,6 @@
 #include <time.h>
 
 #include "led.h"
-#include "secrets.h"
 #include "effects.h"
 #include "config.h"
 #include "log.h"
