@@ -3,25 +3,27 @@ include <BOSL2/screws.scad>
 
 e = 0.01;
 
-x_led = 16.60;
-z_led = 10;
+// Led strip parameters
+l_led = 16.60; // length of one led strip segment, distance between two soldering points (must be exact!)
+w_led = 10; // width of led strip (loose fit ~0.5 tolerance)
+t_led = 0.6; // thickness of led strip (loose fit ~0.2 tolerance)
+
+// Led grid parameters
+h_grid = 7;
+t_grid = 1.2;
 
 t = 1.6;
-t_grid = 1.2;
 t_trans = 0.4; // thickness of transparent layer (0 to disable)
-t_led = 0.6;
+
 t_led_solder = 1.8;
 
-text_size = x_led * 0.7;
+text_size = l_led * 0.8;
 // Install a stencil font. Copy font in Help > Font List
 text_font = "Bunker Stencil";
 
 frame = 9; // extra space around edges
 
-d = 20; // depth of entire module (z direction)
-
-d_cable = 5; // cable cutout diameter
-cable_side = false;
+d = 18; // depth of entire module (z direction)
 
 //txt = [
 //    "HETUISEVIJF",
@@ -51,14 +53,20 @@ txt = [
 leds_x = len(txt[0]);
 leds_y = len(txt);
 
-w = leds_x * x_led; // width, excluding frame
-h = leds_y * x_led; // height, excluding frame
+w = leds_x * l_led; // width, excluding frame
+h = leds_y * l_led; // height, excluding frame
 
 back_screw = "M3";
+
+cable_position = "right"; // position of usb-c power socket: bottom / right
 
 // nicer circles
 $fa = 0.5;
 $fs = 0.5;
+
+module power_socket_cutout() {
+    cuboid([13.4, t+e, 5.4], chamfer=1, edges="Y");
+}
 
 module main() {
     difference() {
@@ -67,15 +75,15 @@ module main() {
         cuboid([w+frame*2, h+frame*2, t], anchor=TOP);
 
         // letters
-        right(w / 2 - x_led/2)
-        back(h / 2 - x_led)
+        right(w / 2 - l_led/2)
+        back(h / 2 - l_led/2 - text_size / 2)
         for (i = [0:leds_y]) {
             up(e)
-            fwd(i * x_led-text_size/2+t_grid*2)
+            fwd(i * l_led)
 
             mirror([1, 0, 0])
             for (j = [0:leds_x-1]) {
-                right(j * x_led)
+                right(j * l_led)
                 text3d(txt[i][j], h=t+2*e, anchor=TOP, size=text_size, font=text_font);
             }
         }
@@ -89,30 +97,16 @@ module main() {
     // grid: horizontal rules
     back(h / 2)
     for (i = [0:leds_y]) {
-        fwd(i * (x_led - t_grid / leds_y))
-        cuboid([w+frame*2, t_grid, z_led], anchor=BOTTOM+BACK);
+        fwd(i * (l_led - t_grid / leds_y))
+        cuboid([w+frame*2, t_grid, h_grid], anchor=BOTTOM+BACK);
     }
 
     // grid: vertical rules
     difference() {
         left(w / 2)
         for (i = [0:leds_x]) {
-            right(i * (x_led - t_grid / leds_x))
-            cuboid([t_grid, h+frame*2, z_led], anchor=BOTTOM+LEFT);
-        }
-
-        // make room for led strips
-        back(h / 2)
-        for (i = [1:leds_y]) {
-            fwd(i * (x_led - t_grid / leds_y))
-            cuboid([w - t_grid, t_led, z_led+e], anchor=BOTTOM+FRONT) {
-                position(LEFT+FRONT)
-                cuboid([t_grid*2, t_led_solder, z_led+e], anchor=FRONT);
-                
-                position(RIGHT+FRONT)
-                cuboid([t_grid*2, t_led_solder, z_led+e], anchor=FRONT);
-            }
-            
+            right(i * (l_led - t_grid / l_led))
+            cuboid([t_grid, h+frame*2, h_grid], anchor=BOTTOM+LEFT);
         }
     }
 
@@ -130,19 +124,17 @@ module main() {
             right(w/2+frame)
             cuboid([t, h+2*frame, d], anchor=BOTTOM+RIGHT);
         }
-
-        // cable cutout
-        up((d+t+t_trans)/2)
-        if (cable_side) {
-            fwd(h/2)
-            right(w/2+frame)
-            yrot(90)
-            #cyl(d=d_cable, h=t, anchor=TOP+LEFT);
-        } else {
-            fwd(h/2+frame)
-            xrot(90)
-            cyl(d=d_cable, h=t, anchor=TOP+BACK);
-        }
+        
+        up(d/2)
+        if (cable_position == "bottom") {
+            fwd(h/2+frame-t/2)
+            power_socket_cutout();
+        } else if (cable_position == "right") {
+            left(w/2+frame-t/2)
+            fwd(h/2 - frame) // move to bottom of clock, above screw pillar
+            zrot(90)
+            power_socket_cutout();
+        }    
     }
 
     // stands for screws
@@ -162,36 +154,39 @@ module main() {
 }
 
 module light_cover() {
-    up(z_led)
-    cuboid([w, h, t_grid], anchor=BOTTOM) {
-        difference() {
-            position(BOTTOM) {
-                left(w / 2 - t_grid / 2)
-                for (x = [1:leds_x-1]) {
-                    right(x * x_led)
-                    cuboid([t_grid*3+0.2, h, t_grid], anchor=TOP);
-                }
-
-                fwd(h / 2 + 0.1)
-                for (y = [1:leds_x-1]) {
-                    back(y * x_led)
-                    cuboid([w, t_grid, t_grid], anchor=TOP+BACK);
-                }
+    up(h_grid)
+    difference() {
+        union() {
+            cuboid([w, h, t], anchor=BOTTOM);
+            
+            // horizontal
+            fwd(h / 2 + 0.1)
+            for (y = [1:leds_x-2]) {
+                back(y * l_led)
+                cuboid([w-0.2, t_grid*3+0.2, t_grid], anchor=TOP);
             }
-
-            position(BOTTOM) {
-                left(w / 2 - t_grid / 2)
-                for (x = [0:leds_x]) {
-                    right(x * x_led)
-                    cuboid([t_grid+0.2, h, t_grid], anchor=TOP);
-                }
-
-                fwd(h / 2 + 0.1)
-                for (y = [0:leds_x]) {
-                    back(y * x_led)
-                    cuboid([w, t_grid+t_led, t_grid], anchor=TOP+FRONT);
-                }
-            }
+        }
+        
+        // horizontal slot for grid
+        fwd(h / 2 + 0.1)
+        for (y = [0:leds_x]) {
+            back(y * l_led)
+            cuboid([w, t_grid+0.2, t_grid+e], anchor=TOP);
+        }
+        
+        // vertical slot for grid
+        left(w / 2 - t_grid / 2)
+        for (x = [0:leds_x]) {
+            right(x * l_led)
+            cuboid([t_grid+0.2, h, t_grid+e], anchor=TOP);
+        }
+        
+        // horizontal slot for led strip
+        fwd(h / 2 - l_led / 2)
+        for (y = [0:leds_x]) {
+            back(y * l_led)
+            down(e)
+            cuboid([w+e, w_led, t_led], anchor=BOTTOM);
         }
     }
 }
@@ -204,7 +199,7 @@ module back_cover() {
 
                 rect_tube(h=t, size=[w+2*frame-t*2-0.2, h+2*frame-t*2-0.2], wall=t, anchor=TOP);
 
-                rect_tube(h=d-z_led-t_grid, size=[w/2, h/2], wall=t_grid, anchor=TOP);
+                rect_tube(h=d-h_grid-t, size=[w/2, h/2], wall=t_grid, anchor=TOP);
 
                 for (x = [(w+frame)/2, (w+frame)/-2]) {
                     for (y = [(h+frame)/2, (h+frame)/-2]) {
