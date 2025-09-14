@@ -158,7 +158,8 @@ module light_cover() {
     difference() {
         union() {
             // plate
-            cuboid([w, h, t], anchor=BOTTOM);
+            color("teal")
+            cuboid([w, h, t], anchor=BOTTOM, chamfer=tol, edges="Z");
             
             // horizontal line
             fwd(h / 2 + 0.1)
