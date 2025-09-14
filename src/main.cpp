@@ -1,5 +1,8 @@
 #include "main.h"
 
+Ticker wifiReconnectTimer;
+
+#ifdef MQTT_ENABLED
 #define MQTT_TOPIC_BASE            "woordklok"
 #define MQTT_TOPIC_LOG             MQTT_TOPIC_BASE "/" "log"
 #define MQTT_TOPIC_HA              MQTT_TOPIC_BASE "/" "ha"
@@ -11,11 +14,6 @@
 #define MQTT_QOS_AT_LEAST_ONCE 1
 #define MQTT_QOS_EXACTLY_ONCE 2
 
-WiFiEventHandler wifiConnectHandler;
-WiFiEventHandler wifiDisconnectHandler;
-Ticker wifiReconnectTimer;
-
-#ifdef MQTT_ENABLED
 AsyncMqttClient mqttClient;
 Ticker mqttReconnectTimer;
 bool ha_state_need_publish = true;
@@ -138,11 +136,11 @@ void connectToWifi() {
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
+#ifdef MQTT_ENABLED
 void onWifiConnect(const WiFiEventStationModeGotIP& event) {
-    #ifdef MQTT_ENABLED
     connectToMqtt();
-    #endif
 }
+#endif
 
 void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
     #ifdef MQTT_ENABLED
@@ -152,8 +150,10 @@ void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
 }
 
 void setupWifi() {
-    wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-    wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+    #ifdef MQTT_ENABLED
+    static WiFiEventHandler wifiDisconnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+    #endif
+    static WiFiEventHandler wifiConnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
     #ifdef MQTT_ENABLED
     mqttClient.onConnect(onMqttConnect);

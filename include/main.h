@@ -1,17 +1,21 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include "config.h"
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Ticker.h>
-#include <AsyncMqttClient.h>
 #include <ArduinoOTA.h>
-#include <ArduinoJson.h>
 #include <time.h>
+
+#ifdef MQTT_ENABLED
+#include <AsyncMqttClient.h>
+#include <ArduinoJson.h>
+#endif
 
 #include "led.h"
 #include "effects.h"
-#include "config.h"
 #include "log.h"
 
 #endif
