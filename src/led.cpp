@@ -295,9 +295,8 @@ void led_setup() {
 
 void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {
     // based on getLocalTime, but without blocking
+    time_t t = time(NULL) + TIME_OFFSET;
     tm tm;
-    time_t t;
-    time(&t);
     localtime_r(&t, &tm);
 
     uint8_t timeStep = (uint8_t) roundf(tm.tm_min / 5.0f);

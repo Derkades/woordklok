@@ -15,14 +15,15 @@
     #define MQTT_PORT 1883
 #endif
 
-// Initial state
+// Initial state (or permanent state, if MQTT is not used)
 #define INITIAL_EFFECT EFFECT_SHOWER_COLOR_FADE
 #define INITIAL_HUE 192
 #define INITIAL_SATURATION 192
 #define INITIAL_BRIGHTNESS 255
 
-// NTP
+// Time
 #define TIMEZONE TZ_Europe_Amsterdam
+#define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
 // Startup animation
 #define STARTUP_ANIMATION_DELAY 20
