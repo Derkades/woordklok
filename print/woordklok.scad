@@ -59,6 +59,8 @@ back_screw = "M3";
 
 cable_position = "right"; // position of usb-c power socket: bottom / right
 
+tol = 0.1;
+
 // nicer circles
 $fa = 0.5;
 $fs = 0.5;
@@ -138,11 +140,11 @@ module main() {
     }
 
     // stands for screws
-    for (x = [(w+frame)/2, (w+frame)/-2])
-    for (y = [(h+frame)/2, (h+frame)/-2])
+    for (x = [(w+frame-t)/2, (w+frame-t)/-2])
+    for (y = [(h+frame-t)/2, (h+frame-t)/-2])
     translate([x, y, 0])
     difference() {
-        cuboid([frame, frame, d-t], anchor=BOTTOM);
+        cuboid([frame-t, frame-t, d-t-tol], anchor=BOTTOM);
 
         screw_hole(back_screw, length=d, anchor=BOTTOM);
 
@@ -162,7 +164,7 @@ module light_cover() {
             fwd(h / 2 + 0.1)
             for (y = [1:leds_x-2]) {
                 back(y * l_led)
-                cuboid([w-0.2, t_grid*3+0.2, t_grid], anchor=TOP);
+                cuboid([w-0.2, t_grid*3+2*tol, t_grid], anchor=TOP);
             }
         }
         
@@ -170,14 +172,14 @@ module light_cover() {
         fwd(h / 2 + 0.1)
         for (y = [0:leds_x]) {
             back(y * l_led)
-            cuboid([w, t_grid+0.2, t_grid+e], anchor=TOP);
+            cuboid([w, t_grid+2*tol, t_grid+e], anchor=TOP);
         }
         
         // vertical slot for grid
         left(w / 2 - t_grid / 2)
         for (x = [0:leds_x]) {
             right(x * l_led)
-            cuboid([t_grid+0.2, h, t_grid+e], anchor=TOP);
+            cuboid([t_grid+2*tol, h, t_grid+e], anchor=TOP);
         }
         
         // horizontal slot for led strip
@@ -191,24 +193,19 @@ module light_cover() {
 }
 
 module back_cover() {
-    up(d)
+    up(d - t/2)
     difference() {
         union() {
-            cuboid([w+2*frame, h+2*frame, t], anchor=BOTTOM);
-
-            rect_tube(h=t, size=[w+2*frame-t*2-0.2, h+2*frame-t*2-0.2], wall=t, anchor=TOP);
-
-            rect_tube(h=d-h_grid-t, size=[w/2, h/2], wall=t_grid, anchor=TOP);
-
-            for (x = [(w+frame)/2, (w+frame)/-2])
-            for (y = [(h+frame)/2, (h+frame)/-2])
-            translate([x, y, 0])
-            cuboid([frame-t*2-0.2, frame-t*2-0.2, t_grid], anchor=TOP);    
+            // plate
+            cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t]);
+            
+            // rectangle to push down on light cover
+            rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP);
         }
 
         // screw holes
-        for (x = [(w+frame)/2, (w+frame)/-2])
-        for (y = [(h+frame)/2, (h+frame)/-2])
+        for (x = [(w+frame-t)/2, (w+frame-t)/-2])
+        for (y = [(h+frame-t)/2, (h+frame-t)/-2])
         translate([x, y, 0])
         screw_hole(back_screw, length=t*2, head="flat");
     }
@@ -216,5 +213,5 @@ module back_cover() {
 
 
 main();
-//light_cover();
-back_cover();
+light_cover();
+//back_cover();
