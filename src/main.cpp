@@ -18,7 +18,7 @@ Ticker wifiReconnectTimer;
 #ifdef MQTT_ENABLED
 AsyncMqttClient mqttClient;
 Ticker mqttReconnectTimer;
-bool      ha_state_need_publish = true;
+bool ha_state_need_publish = true;
 #endif
 
 // Home Assistant (MQTT) light settings
@@ -214,8 +214,9 @@ void loop() {
         mqttClient.publish(MQTT_TOPIC_HA_AVAILABILITY, MQTT_QOS_AT_MOST_ONCE, false, "online");
     }
 
-    if (millis() % 64 == 0 && ha_state_need_publish) {
+    if (ha_state_need_publish) {
         publishState();
+        ha_state_need_publish = false;
     }
     #endif
 
