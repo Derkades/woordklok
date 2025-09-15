@@ -14,7 +14,7 @@
 #include <ArduinoJson.h>
 #endif
 
-#ifdef WIFI_AP
+#ifdef WIFI_AP_ENABLE
 #include <WiFiManager.h>
 #endif
 

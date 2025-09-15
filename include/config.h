@@ -7,8 +7,8 @@
 // WiFi
 #define WIFI_HOSTNAME "woordklok"
 
-// #define WIFI_AP
-#ifdef WIFI_AP
+#define WIFI_AP_ENABLE
+#ifdef WIFI_AP_ENABLE
     // Access point to configure WiFi
     #define WIFI_AP_SSID "Woordklok"
     #define WIFI_AP_PASS "klok7135"

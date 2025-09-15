@@ -132,7 +132,7 @@ void publishState() {
 #endif
 
 void connectToWifi() {
-    #ifdef WIFI_AP
+    #ifdef WIFI_AP_ENABLE
     WiFiManager wm;
     wm.setTitle(WIFI_AP_TITLE);
     wm.setHostname(WIFI_HOSTNAME);
@@ -146,6 +146,7 @@ void connectToWifi() {
         ESP.restart();
     }
     #else
+    WiFi.persistent(false); // avoid unnecessary flash write cycles
     WiFi.setHostname(WIFI_HOSTNAME);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     #endif
