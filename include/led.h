@@ -35,4 +35,6 @@ extern void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightnes
 
 extern void startup_animation();
 
+extern void status_led(uint32_t color);
+
 #endif // LED_H

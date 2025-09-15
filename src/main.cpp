@@ -132,8 +132,23 @@ void publishState() {
 #endif
 
 void connectToWifi() {
-    WiFi.setHostname("woordklok");
+    #ifdef WIFI_AP
+    WiFiManager wm;
+    wm.setTitle(WIFI_AP_TITLE);
+    wm.setHostname(WIFI_HOSTNAME);
+    wm.setConfigPortalTimeout(WIFI_AP_TIMEOUT);
+    wm.setAPCallback([](WiFiManager *wm2) {
+        status_led(0x0000FF);
+    });
+    if (!wm.autoConnect(WIFI_AP_SSID, WIFI_AP_PASS)) {
+        status_led(0xFF0000);
+        delay(10000);
+        ESP.restart();
+    }
+    #else
+    WiFi.setHostname(WIFI_HOSTNAME);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
+    #endif
 }
 
 #ifdef MQTT_ENABLED

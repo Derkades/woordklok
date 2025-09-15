@@ -380,3 +380,8 @@ void startup_animation() {
         delay(STARTUP_ANIMATION_DELAY);
     }
 }
+
+void status_led(uint32_t color) {
+    setLetterColor(0, color);
+    FastLED.show();
+}

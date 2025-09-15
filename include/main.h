@@ -14,6 +14,10 @@
 #include <ArduinoJson.h>
 #endif
 
+#ifdef WIFI_AP
+#include <WiFiManager.h>
+#endif
+
 #include "led.h"
 #include "effects.h"
 #include "log.h"
