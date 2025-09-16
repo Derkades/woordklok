@@ -98,9 +98,9 @@ module main() {
     // grid: vertical rules
     difference() {
         for (i = [0:leds_x])
-        right(i * l_led - w / 2)
+        right(i * l_led - w/2)
         cuboid([t_grid, h+frame*2, h_grid], anchor=BOTTOM);
-        
+
         // slots for led strip solder joints
         up(h_grid + e)
         for (x = [-w/2, w/2])
@@ -115,17 +115,17 @@ module main() {
     difference() {
         x_offset = w/2+frame-t/2+e;
         y_offset = h/2+frame-t/2+e;
-        
+
         union() {
             for (x = [x_offset, -x_offset])
             left(x)
             cuboid([t, h+2*frame, d], anchor=BOTTOM);
-                       
+
             for (y = [y_offset, -y_offset])
             back(y)
             cuboid([w+2*frame, t, d], anchor=BOTTOM);
         }
-        
+
         // USB-C power socket cutout
         up(d/2)
         if (cable_position == "bottom") {
@@ -136,7 +136,7 @@ module main() {
             fwd(h/2 - frame) // move to bottom of clock, above screw pillar
             zrot(90)
             power_socket_cutout();
-        }    
+        }
     }
 
     // stands for screws
@@ -148,8 +148,8 @@ module main() {
 
         screw_hole(back_screw, length=d, anchor=BOTTOM);
 
-        up(d/2)
-        nut_trap_side(frame/2, back_screw, spin=x>0 ? 180 : 0);
+        up(d - 3*t)
+        nut_trap_side(frame/2, back_screw, spin=x>0 ? 180 : 0, anchor=TOP);
     }
 }
 
@@ -160,7 +160,7 @@ module light_cover() {
             // plate
             color("teal")
             cuboid([w, h, t], anchor=BOTTOM, chamfer=tol, edges="Z");
-            
+
             // horizontal line
             fwd(h / 2 + 0.1)
             for (y = [1:leds_x-2]) {
@@ -168,21 +168,21 @@ module light_cover() {
                 cuboid([w-0.2, t_grid*3+2*tol, t_grid], anchor=TOP);
             }
         }
-        
+
         // horizontal slot for grid
         fwd(h / 2 + 0.1)
         for (y = [0:leds_x]) {
             back(y * l_led)
             cuboid([w, t_grid+2*tol, t_grid+e], anchor=TOP);
         }
-        
+
         // vertical slot for grid
         left(w / 2 - t_grid / 2)
         for (x = [0:leds_x]) {
             right(x * l_led)
             cuboid([t_grid+2*tol, h, t_grid+e], anchor=TOP);
         }
-        
+
         // horizontal slot for led strip
         fwd(h / 2 - l_led / 2)
         for (y = [0:leds_x]) {
@@ -199,7 +199,7 @@ module back_cover() {
         union() {
             // plate
             cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t]);
-            
+
             // rectangle to push down on light cover
             rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP);
         }
