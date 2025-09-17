@@ -57,7 +57,8 @@ h = leds_y * l_led; // height, excluding frame
 
 back_screw = "M3";
 
-cable_position = "right"; // position of usb-c power socket: bottom / right
+power_socket_position = "right"; // position of usb-c power socket: bottom / right
+power_socket_offset = t + 1.95 + 5.4/2; // distance between from back and power socket center
 
 tol = 0.1;
 
@@ -127,11 +128,11 @@ module main() {
         }
 
         // USB-C power socket cutout
-        up(d/2)
-        if (cable_position == "bottom") {
+        up(d - power_socket_offset)
+        if (power_socket_position == "bottom") {
             fwd(y_offset)
             power_socket_cutout();
-        } else if (cable_position == "right") {
+        } else if (power_socket_position == "right") {
             left(x_offset)
             fwd(h/2 - frame) // move to bottom of clock, above screw pillar
             zrot(90)
