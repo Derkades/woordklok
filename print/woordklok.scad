@@ -170,26 +170,20 @@ module light_cover() {
         }
 
         // horizontal slot for grid
-        fwd(h / 2 + 0.1)
-        for (y = [0:leds_x]) {
-            back(y * l_led)
-            cuboid([w, t_grid+2*tol, t_grid+e], anchor=TOP);
-        }
+        for (y = [0:leds_x])
+        back(y * l_led - h/2)
+        cuboid([w, t_grid+2*tol, t_grid+e], anchor=TOP);
 
         // vertical slot for grid
-        left(w / 2 - t_grid / 2)
-        for (x = [0:leds_x]) {
-            right(x * l_led)
-            cuboid([t_grid+2*tol, h, t_grid+e], anchor=TOP);
-        }
+        for (x = [0:leds_x])
+        right(x * l_led - w/2)
+        cuboid([t_grid+2*tol, h, t_grid+e], anchor=TOP);
 
         // horizontal slot for led strip
-        fwd(h / 2 - l_led / 2)
-        for (y = [0:leds_x]) {
-            back(y * l_led)
-            down(e)
-            cuboid([w+e, w_led, t_led], anchor=BOTTOM);
-        }
+        down(e)
+        for (y = [0:leds_x])
+        back(y*l_led - h/2 - l_led/2)
+        cuboid([w+e, w_led, t_led], anchor=BOTTOM);
     }
 }
 
@@ -211,7 +205,6 @@ module back_cover() {
         screw_hole(back_screw, length=t*2, head="flat");
     }
 }
-
 
 main();
 light_cover();
