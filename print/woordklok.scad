@@ -204,6 +204,12 @@ module back_cover() {
         for (y = [(h+frame-t)/2, (h+frame-t)/-2])
         translate([x, y, 0])
         screw_hole(back_screw, length=t*2, head="flat");
+        
+        // string holes
+        back(h/3)
+        for (x = [-w/3, w/3])
+        right(x)
+        cyl(d=3, h=t+e);
     }
 }
 
