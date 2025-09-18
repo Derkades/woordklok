@@ -66,6 +66,8 @@ tol = 0.1;
 $fa = 0.5;
 $fs = 0.5;
 
+rounding = t*2;
+
 module power_socket_cutout() {
     cuboid([13.4, t+e, 5.4], chamfer=1, edges="Y");
 }
@@ -74,7 +76,7 @@ module main() {
     difference() {
         // base plate with letters
         color("orange")
-        cuboid([w+frame*2, h+frame*2, t], anchor=TOP);
+        cuboid([w+frame*2, h+frame*2, t], anchor=TOP, rounding=rounding, edges="Z");
 
         // letters
         up(e)
@@ -87,9 +89,10 @@ module main() {
     }
 
     // transparent base plate
+    // slightly larger so it can be selected separately in the slicer (e.g. to be excluded from fuzzy skin)
     color("blue")
     down(t)
-    cuboid([w+2*frame, h+2*frame, t_trans], anchor=TOP);
+    cuboid([w+2*frame+e, h+2*frame+e, t_trans], anchor=TOP, rounding=rounding, edges="Z");
 
     // grid: horizontal rules
     for (i = [0:leds_y])
@@ -114,26 +117,16 @@ module main() {
     // outer frame
     color("green")
     difference() {
-        x_offset = w/2+frame-t/2+e;
-        y_offset = h/2+frame-t/2+e;
-
-        union() {
-            for (x = [x_offset, -x_offset])
-            left(x)
-            cuboid([t, h+2*frame, d], anchor=BOTTOM);
-
-            for (y = [y_offset, -y_offset])
-            back(y)
-            cuboid([w+2*frame, t, d], anchor=BOTTOM);
-        }
+        down(e)
+        rect_tube(d, size=[w+frame*2, h+frame*2], wall=t,rounding=rounding);
 
         // USB-C power socket cutout
         up(d - power_socket_offset)
         if (power_socket_position == "bottom") {
-            fwd(y_offset)
+            fwd(h/2+frame-t/2)
             power_socket_cutout();
         } else if (power_socket_position == "right") {
-            left(x_offset)
+            left(w/2+frame-t/2)
             fwd(h/2 - frame) // move to bottom of clock, above screw pillar
             zrot(90)
             power_socket_cutout();
@@ -193,7 +186,7 @@ module back_cover() {
     difference() {
         union() {
             // plate
-            cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t]);
+            cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t], rounding=rounding/2, edges="Z");
 
             // rectangle to push down on light cover
             rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP);
@@ -214,5 +207,5 @@ module back_cover() {
 }
 
 main();
-light_cover();
+//light_cover();
 //back_cover();
