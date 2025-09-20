@@ -240,8 +240,11 @@ void loop() {
     ArduinoOTA.handle();
 
     #ifdef MQTT_ENABLED
-    if (millis() % 1024 == 0) {
+    // publish online state every 10 seconds
+    static unsigned long ha_last_availability = 0;
+    if (millis() - ha_last_availability > 10000 || ha_last_availability > millis()) {
         mqttClient.publish(MQTT_TOPIC_HA_AVAILABILITY, MQTT_QOS_AT_MOST_ONCE, false, "online");
+        ha_last_availability = millis();
     }
 
     if (ha_state_need_publish) {
