@@ -176,16 +176,15 @@ void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
     #ifdef MQTT_ENABLED
     mqttReconnectTimer.detach(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
     #endif
-    wifiReconnectTimer.once(2, connectToWifi);
+    wifiReconnectTimer.once(5, connectToWifi);
 }
 
 void setupWifi() {
-    #ifdef MQTT_ENABLED
-    static WiFiEventHandler wifiDisconnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-    #endif
     static WiFiEventHandler wifiConnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
     #ifdef MQTT_ENABLED
+    static WiFiEventHandler wifiDisconnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
     mqttClient.onMessage(onMqttMessage);
