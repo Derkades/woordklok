@@ -263,7 +263,7 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
                     rgb.setHSV(hue, saturation, UINT8_MAX);
                     break;
                 case EFFECT_RAINBOW:
-                    rgb.setHSV(((tick / 4) + 16*letterPos) & 0xFF, RAINBOW_SATURATION, UINT8_MAX);
+                    rgb.setHSV(((tick / 4) + 8*drawn_letters) & 0xFF, RAINBOW_SATURATION, UINT8_MAX);
                     break;
                 case EFFECT_SPARKLE_STATIC:
                 case EFFECT_SHOWER:
