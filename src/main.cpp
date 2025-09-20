@@ -23,7 +23,7 @@ bool ha_state_need_publish = true;
 bool      ha_on                 = true;
 LedEffect ha_effect             = INITIAL_EFFECT;
 uint8_t   ha_hue                = INITIAL_HUE;
-uint8_t   ha_saturation         = INITIAL_HUE;
+uint8_t   ha_saturation         = INITIAL_SATURATION;
 uint8_t   ha_brightness         = INITIAL_BRIGHTNESS;
 
 void log(const String &msg) {
