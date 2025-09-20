@@ -40,6 +40,17 @@
 // LEDs
 #define LED_PIN 13
 
+// LDR (automatic brightness)
+#define LDR_ENABLED
+#ifdef LDR_ENABLED
+    // #define LDR_DEBUG // write LDR values to the log every second
+    #define LDR_PIN 17
+    #define LDR_INPUT_MIN 20 // LDR value below which the clock displays minimum brightness
+    #define LDR_INPUT_MAX 600 // LDR value above which the clock displays maximum brightness
+    #define LDR_BRIGHTNESS_MIN 10
+    #define LDR_BRIGHTNESS_MAX 255
+#endif
+
 // Startup animation
 #define STARTUP_ANIMATION_DELAY 20
 #define STARTUP_ANIMATION_COLOR_MOVING 0xFFFFFF
@@ -51,6 +62,7 @@
 #define HUE_SHIFT_DEG 90
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 #define BACKGROUND_DIM 4 // background brightness reduction factor (>=1)
+#define EFFECTS_MINIMUM_BRIGHTNESS 25 // minimum brightness to show animated background effects
 #define RAIN_SPEED 6 // higher is faster
 
 #endif // CONFIG_H

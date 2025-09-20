@@ -250,7 +250,22 @@ void loop() {
     }
     #endif
 
-    led_loop(ha_on, ha_hue, ha_saturation, ha_brightness, ha_effect);
+    #ifdef LDR_ENABLED
+    static uint16_t ldr_avg = 0;
+    ldr_avg = (ldr_avg * 7 + (uint16_t) analogRead(LDR_PIN)) / 8;
+    ha_brightness = constrain(map(ldr_avg, LDR_INPUT_MIN, LDR_INPUT_MAX, 0, UINT8_MAX), LDR_BRIGHTNESS_MIN, LDR_BRIGHTNESS_MAX);
+    // TODO store LDR brightness separately and use geometric mean to combine with ha_brightness
+
+    #ifdef LDR_DEBUG
+    static unsigned long last_ldr = 0;
+    if (millis() - last_ldr > 1000 || last_ldr > millis()) {
+        log(String("ldr in:") + String(analogRead(LDR_PIN)) + String(" avg:") + String(ldr_avg) + String(" brightness:") + String(ha_brightness));
+        last_ldr = millis();
+    }
+    #endif // LDR_DEBUG
+    #endif // LDR_ENABLED
+
+    led_loop(ha_on, ha_hue, ha_saturation, ha_brightness, ha_brightness < EFFECTS_MINIMUM_BRIGHTNESS ? EFFECT_STATIC : ha_effect);
 
     delay(10);
 }
