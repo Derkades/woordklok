@@ -358,6 +358,8 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
 }
 
 void startup_animation() {
+    FastLED.setBrightness(INITIAL_BRIGHTNESS);
+
     for (uint16_t i = 0; i < NUM_LETTERS; i++) {
         setLetterColor(i, STARTUP_ANIMATION_COLOR_BACKGROUND);
     }
