@@ -137,14 +137,27 @@ void connectToWifi() {
     WiFiManager wm;
     wm.setTitle(WIFI_AP_TITLE);
     wm.setHostname(WIFI_HOSTNAME);
+    wm.setConnectTimeout(10000);
     wm.setConfigPortalTimeout(WIFI_AP_TIMEOUT);
-    wm.setAPCallback([](WiFiManager *wm2) {
-        status_led(0x0000FF);
-    });
-    if (!wm.autoConnect(WIFI_AP_SSID, WIFI_AP_PASS)) {
-        status_led(0xFF0000);
-        delay(10000);
-        ESP.restart();
+    wm.setConfigPortalBlocking(false);
+
+    if (wm.autoConnect(WIFI_AP_SSID, WIFI_AP_PASS)) {
+        // connected
+        return;
+    }
+
+    bool configure_led_state = false;
+    while (wm.process() == false) {
+        delay(100);
+        configure_led_state = !configure_led_state;
+        status_led(configure_led_state ? 0xFFFF00 : 0);
+
+        if (millis() > WIFI_AP_TIMEOUT*1000) {
+            status_led(0xFF0000);
+            delay(5000);
+            ESP.restart();
+            return;
+        }
     }
     #else
     WiFi.persistent(false); // avoid unnecessary flash write cycles
