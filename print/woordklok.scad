@@ -7,7 +7,7 @@ e = 0.01;
 l_led = 16.60; // length of one led strip segment, distance between two soldering points (must be exact!)
 w_led = 10; // width of led strip (loose fit ~0.5 tolerance)
 t_led = 0.6; // thickness of led strip (loose fit ~0.2 tolerance)
-t_led_solder = 0.4; // additional thickness of led strip on top of t_led for solder joints
+t_led_solder = 1; // additional thickness of led strip on top of t_led for solder joints
 
 // Led grid parameters
 h_grid = 7;
