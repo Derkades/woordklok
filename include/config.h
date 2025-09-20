@@ -66,7 +66,6 @@
 #define HUE_SHIFT_DEG 90
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 #define BACKGROUND_DIM 4 // background brightness reduction factor (>=1)
-#define EFFECTS_MINIMUM_BRIGHTNESS 25 // minimum brightness to show animated background effects
 #define RAIN_SPEED 6 // higher is faster
 
 #endif // CONFIG_H

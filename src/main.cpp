@@ -229,7 +229,7 @@ void setupOta() {
 }
 
 void setup() {
-    Serial.begin(115200);
+    // Serial.begin(115200);
     led_setup();
     configTime(TIMEZONE, "pool.ntp.org");
     startup_animation();
@@ -253,11 +253,14 @@ void loop() {
     }
     #endif
 
+    uint8_t brightness = ha_brightness;
+
     #ifdef LDR_ENABLED
     static uint16_t ldr_avg = 0;
     ldr_avg = (ldr_avg * 7 + (uint16_t) analogRead(LDR_PIN)) / 8;
-    ha_brightness = constrain(map(ldr_avg, LDR_INPUT_MIN, LDR_INPUT_MAX, 0, UINT8_MAX), LDR_BRIGHTNESS_MIN, LDR_BRIGHTNESS_MAX);
-    // TODO store LDR brightness separately and use geometric mean to combine with ha_brightness
+    uint8_t ldr_brightness = constrain(map(ldr_avg, LDR_INPUT_MIN, LDR_INPUT_MAX, 0, UINT8_MAX), LDR_BRIGHTNESS_MIN, LDR_BRIGHTNESS_MAX);
+    // brightness = sqrt16((uint16_t) ldr_brightness * (uint16_t) ha_brightness);
+    brightness = ldr_brightness;
 
     #ifdef LDR_DEBUG
     static unsigned long last_ldr = 0;
@@ -268,7 +271,14 @@ void loop() {
     #endif // LDR_DEBUG
     #endif // LDR_ENABLED
 
-    led_loop(ha_on, ha_hue, ha_saturation, ha_brightness, ha_brightness < EFFECTS_MINIMUM_BRIGHTNESS ? EFFECT_STATIC : ha_effect);
+    static bool effects_disabled = false;
+    if (brightness > 35) {
+        effects_disabled = false;
+    } else if (brightness < 25) {
+        effects_disabled = true;
+    }
+
+    led_loop(ha_on, ha_hue, ha_saturation, brightness, effects_disabled ? EFFECT_STATIC : ha_effect);
 
     delay(10);
 }
