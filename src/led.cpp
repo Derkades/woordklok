@@ -290,7 +290,7 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
 }
 
 void led_setup() {
-    FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS);
+    FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
 }
 
 void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {

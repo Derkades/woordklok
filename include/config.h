@@ -37,6 +37,9 @@
 #define TIMEZONE TZ_Europe_Amsterdam
 #define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
+// LEDs
+#define LED_PIN 13
+
 // Startup animation
 #define STARTUP_ANIMATION_DELAY 20
 #define STARTUP_ANIMATION_COLOR_MOVING 0xFFFFFF
