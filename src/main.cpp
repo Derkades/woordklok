@@ -27,6 +27,7 @@ uint8_t   ha_saturation         = INITIAL_SATURATION;
 uint8_t   ha_brightness         = INITIAL_BRIGHTNESS;
 
 void log(const String &msg) {
+    Serial.println(msg);
     #ifdef MQTT_ENABLED
     const char *c_str = msg.c_str();
     if (mqttClient.connected()) {
@@ -216,6 +217,7 @@ void setupOta() {
 }
 
 void setup() {
+    Serial.begin(115200);
     led_setup();
     configTime(TIMEZONE, "pool.ntp.org");
     startup_animation();
