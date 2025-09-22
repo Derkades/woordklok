@@ -68,4 +68,7 @@
 #define BACKGROUND_DIM 4 // background brightness reduction factor (>=1)
 #define RAIN_SPEED 6 // higher is faster
 
+// May cause LED flickering. Leave disabled when not needed.
+// #define DEBUG_SERIAL
+
 #endif // CONFIG_H

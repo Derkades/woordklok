@@ -1,7 +1,5 @@
 #include "main.h"
 
-Ticker wifiReconnectTimer;
-
 #ifdef MQTT_ENABLED
 #define MQTT_TOPIC_BASE            "woordklok"
 #define MQTT_TOPIC_LOG             MQTT_TOPIC_BASE "/" "log"
@@ -27,7 +25,9 @@ uint8_t   ha_saturation         = INITIAL_SATURATION;
 uint8_t   ha_brightness         = INITIAL_BRIGHTNESS;
 
 void log(const String &msg) {
+    #ifdef DEBUG_SERIAL
     Serial.println(msg);
+    #endif
     #ifdef MQTT_ENABLED
     const char *c_str = msg.c_str();
     if (mqttClient.connected()) {
@@ -44,7 +44,6 @@ void connectToMqtt() {
 void onMqttConnect(bool sessionPresent) {
     log("MQTT connected");
     mqttClient.subscribe(MQTT_TOPIC_HA_COMMAND, MQTT_QOS_AT_LEAST_ONCE);
-    ArduinoOTA.begin(false);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
@@ -59,8 +58,6 @@ void onMqttMessage(char* topic, char* payload_unsafe, AsyncMqttClientMessageProp
     char payload[len + 1];
     memcpy(payload, payload_unsafe, len);
     payload[len] = '\0';
-
-    // log("Received mqtt message topic='" + String(topic) + "' payload='" + String(payload) + "'");
 
     if (strcmp(topic, MQTT_TOPIC_HA_COMMAND) == 0) {
         StaticJsonDocument<512> doc;
@@ -129,15 +126,28 @@ void publishState() {
     serializeJson(doc, buf);
     mqttClient.publish(MQTT_TOPIC_HA_STATE, MQTT_QOS_AT_MOST_ONCE, false, buf);
 }
-
 #endif
 
-void connectToWifi() {
+#ifdef MQTT_ENABLED
+void onWifiConnect(const WiFiEventStationModeGotIP& event) {
+    connectToMqtt();
+}
+#endif
+
+void setupWifi() {
+    #ifdef MQTT_ENABLED
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.onMessage(onMqttMessage);
+    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+    static WiFiEventHandler wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+    #endif
+
     #ifdef WIFI_AP_ENABLE
     WiFiManager wm;
     wm.setTitle(WIFI_AP_TITLE);
     wm.setHostname(WIFI_HOSTNAME);
-    wm.setConnectTimeout(10000);
+    wm.setConnectTimeout(10);
     wm.setConfigPortalTimeout(WIFI_AP_TIMEOUT);
     wm.setConfigPortalBlocking(false);
 
@@ -148,50 +158,27 @@ void connectToWifi() {
 
     bool configure_led_state = false;
     while (wm.process() == false) {
-        delay(100);
+        delay(200);
         configure_led_state = !configure_led_state;
         status_led(configure_led_state ? 0xFFFF00 : 0);
 
         if (millis() > WIFI_AP_TIMEOUT*1000) {
+            Serial.println("timeout reached, restarting ESP");
             status_led(0xFF0000);
             delay(5000);
             ESP.restart();
             return;
         }
     }
+
+    Serial.println("configuration complete");
+    delay(5000);
+    ESP.restart();
     #else
     WiFi.persistent(false); // avoid unnecessary flash write cycles
     WiFi.setHostname(WIFI_HOSTNAME);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    #endif
-}
-
-#ifdef MQTT_ENABLED
-void onWifiConnect(const WiFiEventStationModeGotIP& event) {
-    connectToMqtt();
-}
-#endif
-
-void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
-    #ifdef MQTT_ENABLED
-    mqttReconnectTimer.detach(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-    #endif
-    wifiReconnectTimer.once(5, connectToWifi);
-}
-
-void setupWifi() {
-    static WiFiEventHandler wifiConnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
-
-    #ifdef MQTT_ENABLED
-    static WiFiEventHandler wifiDisconnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-
-    mqttClient.onConnect(onMqttConnect);
-    mqttClient.onDisconnect(onMqttDisconnect);
-    mqttClient.onMessage(onMqttMessage);
-    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-    #endif
-
-    connectToWifi();
+    #endif // WIFI_AP_ENABLE
 }
 
 void setupOta() {
@@ -229,11 +216,15 @@ void setupOta() {
 }
 
 void setup() {
-    // Serial.begin(115200);
+    #ifdef DEBUG_SERIAL
+    Serial.begin(115200);
+    #endif
+
     led_setup();
     configTime(TIMEZONE, "pool.ntp.org");
     startup_animation();
     setupWifi();
+    ArduinoOTA.begin(false);
 }
 
 void loop() {
