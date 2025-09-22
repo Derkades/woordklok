@@ -12,7 +12,7 @@
     // Access point to configure WiFi
     #define WIFI_AP_SSID "Woordklok"
     #define WIFI_AP_PASS "klok7135"
-    #define WIFI_AP_TITLE "Woorklok"
+    #define WIFI_AP_TITLE "Woordklok"
     #define WIFI_AP_TIMEOUT 10*60
 #else
     // Hardcoded WiFi credentials
