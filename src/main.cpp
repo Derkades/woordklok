@@ -147,7 +147,7 @@ void setupWifi() {
     WiFiManager wm;
     wm.setTitle(WIFI_AP_TITLE);
     wm.setHostname(WIFI_HOSTNAME);
-    wm.setConnectTimeout(10);
+    wm.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wm.setConfigPortalTimeout(WIFI_AP_TIMEOUT);
     wm.setConfigPortalBlocking(false);
 

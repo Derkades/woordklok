@@ -13,7 +13,9 @@
     #define WIFI_AP_SSID "Woordklok"
     #define WIFI_AP_PASS "klok7135"
     #define WIFI_AP_TITLE "Woordklok"
-    #define WIFI_AP_TIMEOUT 10*60
+    #define WIFI_AP_TIMEOUT 10*60 // seconds before AP is shut down to try to connect to saved WiFi again
+
+    #define WIFI_CONNECT_TIMEOUT 30 // seconds
 #else
     // Hardcoded WiFi credentials
     #define WIFI_SSID ""
