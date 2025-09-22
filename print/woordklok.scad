@@ -61,6 +61,7 @@ power_socket_position = "right"; // position of usb-c power socket: bottom / rig
 power_socket_offset = t + 1.95 + 5.4/2; // distance between from back and power socket center
 
 tol = 0.1;
+$slop = tol; // for screws and nuts from BOSL2
 
 // nicer circles
 $fa = 0.5;
