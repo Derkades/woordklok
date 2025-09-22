@@ -5,7 +5,6 @@
 
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #define FASTLED_ESP8266_RAW_PIN_ORDER
-#define FASTLED_ALL_PINS_HARDWARE_SPI
 #include <FastLED.h>
 #include <stdint.h>
 
