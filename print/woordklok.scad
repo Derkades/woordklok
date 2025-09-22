@@ -1,7 +1,10 @@
 include <BOSL2/std.scad>
 include <BOSL2/screws.scad>
+include <BOSL2/walls.scad>
 
-e = 0.01;
+e = 0.01; // negligible distance to eliminate z-fighting in preview
+tol = 0.1;
+$slop = tol; // for screws and nuts from BOSL2
 
 // Led strip parameters
 l_led = 16.60; // length of one led strip segment, distance between two soldering points (must be exact!)
@@ -22,7 +25,8 @@ text_font = "Bunker Stencil";
 
 frame = 9; // extra space around edges
 
-d = 18; // depth of entire module (z direction)
+d = 20; // depth of entire module (z direction)
+d_inner = d - 2*t - tol; // inner depth, excluding back panel
 
 //txt = [
 //    "HETUISEVIJF",
@@ -56,12 +60,14 @@ w = leds_x * l_led; // width, excluding frame
 h = leds_y * l_led; // height, excluding frame
 
 back_screw = "M3";
+back_screw_reinforcement_d = 6;
 
 power_socket_position = "right"; // position of usb-c power socket: bottom / right
 power_socket_offset = t + 1.95 + 5.4/2; // distance between from back and power socket center
 
-tol = 0.1;
-$slop = tol; // for screws and nuts from BOSL2
+wall_mount = "screw"; // "string" / "screw"
+d_wall_mount_screw = 4;
+d_wall_mount_screw_head = 8;
 
 // nicer circles
 $fa = 0.5;
@@ -116,7 +122,7 @@ module main() {
     }
 
     // outer frame
-    color("green")
+    *color("green")
     difference() {
         down(e)
         rect_tube(d, size=[w+frame*2, h+frame*2], wall=t,rounding=rounding);
@@ -137,18 +143,18 @@ module main() {
     // stands for screws
     for (x = [(w+frame-t)/2, (w+frame-t)/-2])
     for (y = [(h+frame-t)/2, (h+frame-t)/-2])
-    translate([x, y, 0])
+    translate([x, y, d_inner])
     difference() {
-        cuboid([frame-t, frame-t, d-t-tol], anchor=BOTTOM);
+        cuboid([frame-t, frame-t, d_inner], anchor=TOP);
 
-        screw_hole(back_screw, length=d, anchor=BOTTOM);
+        screw_hole(back_screw, length=d, anchor=TOP);
 
-        up(d - 3*t)
+        down(2*t)
         nut_trap_side(frame/2, back_screw, spin=x>0 ? 180 : 0, anchor=TOP);
     }
     
     // trim to support back cover    
-    up(d - t - tol)
+    up(d_inner)
     difference() {
         rect_tube(size=[w+2*frame-2*t, h+2*frame-2*t], h=t*2, wall=t, anchor=TOP);
         
@@ -192,12 +198,27 @@ module light_cover() {
 }
 
 module back_cover() {
+    plate_w = w + 2*frame - 2*t - 2*tol;
+    plate_h = h + 2*frame - 2*t - 2*tol;
+    
+    
     up(d - t/2)
     difference() {
         union() {
-            // plate
-            cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t], rounding=rounding/2, edges="Z");
-
+            // plate            
+            cuboid([plate_w, plate_h, t], rounding=rounding/2, edges="Z");
+            
+            // for stiffness
+            plate2d = rect([plate_w, plate_h], rounding=rounding/2);
+            down(t)
+            hex_panel(plate2d, height=t, strut=t_grid, spacing=10);
+            
+            // screw hole reinforcement
+            for (x = [(w+frame-t-tol)/2, (w+frame-t-tol)/-2])
+            for (y = [(h+frame-t-tol)/2, (h+frame-t-tol)/-2])
+            translate([x, y, -t])
+            cuboid([frame-t-tol, frame-t-tol, t], rounding=rounding/2, edges="Z");
+            
             // rectangle to push down on light cover
             rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
         }
@@ -205,21 +226,24 @@ module back_cover() {
         // screw holes
         for (x = [(w+frame-t)/2, (w+frame-t)/-2])
         for (y = [(h+frame-t)/2, (h+frame-t)/-2])
-        translate([x, y, 0])
-        screw_hole(back_screw, length=t*2, head="flat");
+        translate([x, y, t/2])
+        screw_hole(back_screw, length=t*3, head="flat", anchor=TOP);
         
-        // string holes
-        back(h/3)
-        for (x = [-w/3, w/3])
-        right(x)
-        cyl(d=3, h=t+e);
+        // wall mount
+        down(t/2)
+        back(h/3-t)
+        if (wall_mount == "string") {
+            for (x = [-w/3, w/3])
+            right(x)
+            cyl(d=3, h=t*2+e);
+        } else if (wall_mount == "screw") {
+            cyl(d=d_wall_mount_screw_head, h=2*t+e);
+            back(d_wall_mount_screw_head/2)
+            cuboid([d_wall_mount_screw, d_wall_mount_screw_head, 2*t+e], rounding=d_wall_mount_screw/2, edges="Z");
+        }
     }
-    
-    // for stiffness
-    up(d - 2*t)
-    rect_tube(h=t, size=[w+frame, h+frame], wall=t, chamfer=frame*2);
 }
 
 main();
 //light_cover();
-//back_cover();
+back_cover();
