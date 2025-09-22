@@ -146,6 +146,15 @@ module main() {
         up(d - 3*t)
         nut_trap_side(frame/2, back_screw, spin=x>0 ? 180 : 0, anchor=TOP);
     }
+    
+    // trim to support back cover    
+    up(d - t - tol)
+    difference() {
+        rect_tube(size=[w+2*frame-2*t, h+2*frame-2*t], h=t*2, wall=t, anchor=TOP);
+        
+        down(t)
+        cuboid([w+2*frame-2*t, h+2*frame-2*t, t], chamfer=t, edges=TOP, anchor=TOP);
+    }
 }
 
 module light_cover() {
@@ -190,7 +199,7 @@ module back_cover() {
             cuboid([w + 2*frame - 2*t - 2*tol, h + 2*frame - 2*t - 2*tol, t], rounding=rounding/2, edges="Z");
 
             // rectangle to push down on light cover
-            rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP);
+            rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
         }
 
         // screw holes
@@ -205,6 +214,10 @@ module back_cover() {
         right(x)
         cyl(d=3, h=t+e);
     }
+    
+    // for stiffness
+    up(d - 2*t)
+    rect_tube(h=t, size=[w+frame, h+frame], wall=t, chamfer=frame*2);
 }
 
 main();
