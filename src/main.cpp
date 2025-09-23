@@ -175,8 +175,8 @@ void setupWifi() {
     delay(5000);
     ESP.restart();
     #else
+    wifi_station_set_hostname(WIFI_HOSTNAME);
     WiFi.persistent(false); // avoid unnecessary flash write cycles
-    WiFi.setHostname(WIFI_HOSTNAME);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     #endif // WIFI_AP_ENABLE
 }
