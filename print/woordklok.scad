@@ -93,7 +93,7 @@ module main() {
         fwd(i *l_led - h/2 + l_led/2 + text_size/2)
         mirror([1, 0, 0])
         for (j = [0:leds_x-1])
-        right(j * l_led - h/2)
+        right(j * l_led - h/2 + l_led/4)
         text3d(txt[i][j], h=t+2*e, anchor=TOP, size=text_size, font=text_font);
     }
 
@@ -124,7 +124,7 @@ module main() {
     }
 
     // outer frame
-    *color("green")
+    color("green")
     difference() {
         down(e)
         rect_tube(d, size=[w+frame*2, h+frame*2], wall=t,rounding=rounding);
