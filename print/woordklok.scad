@@ -118,7 +118,7 @@ module main() {
         up(h_grid + e)
         for (x = [-w/2, w/2])
         right(x)
-        for (y = [1:leds_x-1])
+        for (y = [1:leds_y])
         fwd(y*l_led - h/2 - l_led/2)
         cuboid([t_grid+e, w_led, t_led_solder], anchor=TOP);
     }
