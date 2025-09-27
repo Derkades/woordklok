@@ -41,16 +41,18 @@ d_inner = d - 2*t - tol; // inner depth, excluding back panel
 //    "TWAALFBFUUR",
 //];
 
+// NL 10x10
 txt = [
-    "HETISUVIJF",
-    "TIENLKWART",
-    "OVERSKVOOR",
-    "HALFZESEEN",
-    "TWEEGIDRIE",
-    "VIERBZEVEN",
-    "VIJFENEGEN",
+    "ODHETUISIB",
+    "VIJFATIENE",
+    "KWARTFOVER",
+    "VOOREHALFL",
+    "JEENRTWEEQ",
+    "DRIEHVIERI",
+    "VIJFNZEVEN",
+    "SNEGENXZES",
     "ACHTIENELF",
-    "TWAALFYUUR",
+    "TWAALFMUUR",
 ];
 
 leds_x = len(txt[0]);
