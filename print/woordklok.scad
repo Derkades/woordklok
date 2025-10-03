@@ -65,7 +65,6 @@ back_screw = "M3";
 back_screw_reinforcement_d = 6;
 
 power_socket_position = "right"; // position of usb-c power socket: bottom / right
-power_socket_offset = t + 1.95 + 5.4/2; // distance between from back and power socket center
 
 wall_mount = "screw"; // "string" / "screw"
 d_wall_mount_screw = 4;
@@ -78,7 +77,7 @@ $fs = 0.5;
 rounding = t*2;
 
 module power_socket_cutout() {
-    cuboid([13.4, t+e, 5.4], chamfer=1, edges="Y");
+    cuboid([13.4, t+e, 5.4], chamfer=1, edges="Y", anchor=TOP);
 }
 
 module main() {
@@ -93,7 +92,7 @@ module main() {
         fwd(i *l_led - h/2 + l_led/2 + text_size/2)
         mirror([1, 0, 0])
         for (j = [0:leds_x-1])
-        right(j * l_led - h/2 + l_led/4)
+        right(j * l_led - h/2 + l_led/2)
         text3d(txt[i][j], h=t+2*e, anchor=TOP, size=text_size, font=text_font);
     }
 
@@ -130,7 +129,7 @@ module main() {
         rect_tube(d, size=[w+frame*2, h+frame*2], wall=t,rounding=rounding);
 
         // USB-C power socket cutout
-        up(d - power_socket_offset)
+        up(d - t*4)
         if (power_socket_position == "bottom") {
             fwd(h/2+frame-t/2)
             power_socket_cutout();
