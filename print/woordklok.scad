@@ -17,43 +17,46 @@ h_grid = 7;
 t_grid = 0.8;
 
 t = 1.2;
-t_trans = 0.4; // thickness of transparent layer (0 to disable)
+draw_transparent_layer = true;
+t_trans = 0.4; // thickness of transparent layer
 
 text_size = l_led * 0.8;
 // Install a stencil font. Copy font in Help > Font List
-text_font = "Bunker Stencil";
+//text_font = "Bunker Stencil";
+text_font = "Consola Mono:style=Bold";
 
 frame = 9; // extra space around edges
 
 d = 20; // depth of entire module (z direction)
 d_inner = d - 2*t - tol; // inner depth, excluding back panel
 
-//txt = [
-//    "HETUISEVIJF",
-//    "TIENHRAVOOR",
-//    "OVERAOKWART",
-//    "HALFLBAOVER",
-//    "VOORLIKDEEN",
-//    "TWEEONJDRIE",
-//    "VIERVIJFZES",
-//    "ZEVENENEGEN",
-//    "ACHTIENSELF",
-//    "TWAALFBFUUR",
-//];
+// EN 10x10
+txt = [
+    "IT IS FIVE",
+    "TEN HALF  ",
+    "QUARTER TO",
+    "PAST TWONE",
+    "THREE FOUR",
+    "FIVE   SIX",
+    " SEVENINE ",
+    "TWELVEIGHT",
+    "TEN ELEVEN",
+    " O CLOCK  "
+];
 
 // NL 10x10
-txt = [
-    "ODHETUISIB",
-    "VIJFATIENE",
-    "KWARTFOVER",
-    "VOOREHALFL",
-    "JEENRTWEEQ",
-    "DRIEHVIERI",
-    "VIJFNZEVEN",
-    "SNEGENXZES",
-    "ACHTIENELF",
-    "TWAALFMUUR",
-];
+//txt = [
+//    "ODHETUISIB",
+//    "VIJFATIENE",
+//    "KWARTFOVER",
+//    "VOOREHALFL",
+//    "JEENRTWEEQ",
+//    "DRIEHVIERI",
+//    "VIJFNZEVEN",
+//    "SNEGENXZES",
+//    "ACHTIENELF",
+//    "TWAALFMUUR",
+//];
 
 leds_x = len(txt[0]);
 leds_y = len(txt);
@@ -66,9 +69,17 @@ back_screw_reinforcement_d = 6;
 
 power_socket_position = "right"; // position of usb-c power socket: bottom / right
 
+ldr_hole = true;
+ldr_d = 5;
+
 wall_mount = "screw"; // "string" / "screw"
 d_wall_mount_screw = 4;
 d_wall_mount_screw_head = 8;
+
+test_section = false; // only render a small section for test print
+draw_main = true;
+draw_light_cover = false;
+draw_back_cover = false;
 
 // nicer circles
 $fa = 0.5;
@@ -98,6 +109,7 @@ module main() {
 
     // transparent base plate
     // slightly larger so it can be selected separately in the slicer (e.g. to be excluded from fuzzy skin)
+    if (draw_transparent_layer)
     color("blue")
     down(t)
     cuboid([w+2*frame+e, h+2*frame+e, t_trans], anchor=TOP, rounding=rounding, edges="Z");
@@ -139,6 +151,15 @@ module main() {
             zrot(90)
             power_socket_cutout();
         }
+        
+        // Hole for LDR
+        if (ldr_hole) {
+            up(d-4*t-ldr_d/2-tol)
+            back(h/2+frame-t/2)
+            xrot(90)
+            cyl(h=t+e, d=ldr_d);
+            
+        }
     }
 
     // stands for screws
@@ -170,25 +191,25 @@ module light_cover() {
         union() {
             // plate
             color("teal")
-            cuboid([w, h, t], anchor=BOTTOM, chamfer=tol, edges="Z");
+            cuboid([w+t_grid, h+t_grid, t], anchor=BOTTOM, chamfer=t_grid+tol, edges="Z");
 
             // horizontal line
             fwd(h / 2 + 0.1)
             for (y = [1:leds_x-2]) {
                 back(y * l_led)
-                cuboid([w-0.2, t_grid*3+2*tol, t_grid], anchor=TOP);
+                cuboid([w-0.2, t_grid*3+2*tol, t], anchor=TOP);
             }
         }
 
         // horizontal slot for grid
         for (y = [0:leds_x])
         back(y * l_led - h/2)
-        cuboid([w, t_grid+2*tol, t_grid+e], anchor=TOP);
+        cuboid([w, t_grid+2*tol, t+e], anchor=TOP);
 
         // vertical slot for grid
         for (x = [0:leds_x])
         right(x * l_led - w/2)
-        cuboid([t_grid+2*tol, h, t_grid+e], anchor=TOP);
+        cuboid([t_grid+2*tol, h, t+e], anchor=TOP);
 
         // horizontal slot for led strip
         down(e)
@@ -201,7 +222,6 @@ module light_cover() {
 module back_cover() {
     plate_w = w + 2*frame - 2*t - 2*tol;
     plate_h = h + 2*frame - 2*t - 2*tol;
-    
     
     up(d - t/2)
     difference() {
@@ -221,7 +241,7 @@ module back_cover() {
             cuboid([frame-t-tol, frame-t-tol, t], rounding=rounding/2, edges="Z");
             
             // rectangle to push down on light cover
-            rect_tube(h=d-h_grid-t-t/2, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
+            rect_tube(h=d-h_grid-t-t/2-tol, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
         }
 
         // screw holes
@@ -245,6 +265,15 @@ module back_cover() {
     }
 }
 
-main();
-//light_cover();
-back_cover();
+intersection() {
+    if (test_section) {
+        translate([-w/4, -h/4, 0])
+        cuboid([100, 100, 100], anchor=BACK+RIGHT);
+    }
+
+    union() {
+        if (draw_main) main();
+        if (draw_light_cover) light_cover();
+        if (draw_back_cover) back_cover();
+    }
+}
