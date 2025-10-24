@@ -31,32 +31,32 @@ d = 20; // depth of entire module (z direction)
 d_inner = d - 2*t - tol; // inner depth, excluding back panel
 
 // EN 10x10
-txt = [
-    "IT IS FIVE",
-    "TEN HALF  ",
-    "QUARTER TO",
-    "PAST TWONE",
-    "THREE FOUR",
-    "FIVE   SIX",
-    " SEVENINE ",
-    "TWELVEIGHT",
-    "TEN ELEVEN",
-    " O CLOCK  "
-];
+//txt = [
+//    "IT IS FIVE",
+//    "TEN HALF  ",
+//    "QUARTER TO",
+//    "PAST TWONE",
+//    "THREE FOUR",
+//    "FIVE   SIX",
+//    " SEVENINE ",
+//    "TWELVEIGHT",
+//    "TEN ELEVEN",
+//    " O CLOCK  "
+//];
 
 // NL 10x10
-//txt = [
-//    "ODHETUISIB",
-//    "VIJFATIENE",
-//    "KWARTFOVER",
-//    "VOOREHALFL",
-//    "JEENRTWEEQ",
-//    "DRIEHVIERI",
-//    "VIJFNZEVEN",
-//    "SNEGENXZES",
-//    "ACHTIENELF",
-//    "TWAALFMUUR",
-//];
+txt = [
+    "ODHETUISIB",
+    "VIJFATIENE",
+    "KWARTFOVER",
+    "VOOREHALFL",
+    "JEENRTWEEQ",
+    "DRIEHVIERI",
+    "VIJFNZEVEN",
+    "SNEGENXZES",
+    "ACHTIENELF",
+    "TWAALFMUUR",
+];
 
 leds_x = len(txt[0]);
 leds_y = len(txt);
