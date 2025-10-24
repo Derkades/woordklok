@@ -213,7 +213,11 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
                 const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
                 const short a = 3821;
+                #ifdef EFFECT_VLIP
                 const short b = a - (tick + hash(i)) % a;
+                #else
+                const short b = a - (tick + hash(i)) % a;
+                #endif
                 if (b <= 2*UINT8_MAX) {
                     uint8_t v = (uint8_t) b;
                     if (v > UINT8_MAX) {
@@ -233,7 +237,11 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
 
                 const uint8_t complementary_hue = (uint8_t) (hue + HUE_SHIFT);
 
-                const short v = (RAIN_SPEED*tick - 50*row + hash(col)) % 13000 % 1200;
+                #ifdef EFFECT_VFLIP
+                const short v = (RAIN_SPEED*tick - 50*row + hash(col)) % 1200;
+                #else
+                const short v = (RAIN_SPEED*tick + 50*row + hash(col)) % 1200;
+                #endif
                 if (v < 256) {
                     rgb.setHSV(complementary_hue, saturation, (256 - v) / BACKGROUND_DIM);
                 }
