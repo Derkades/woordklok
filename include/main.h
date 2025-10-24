@@ -4,10 +4,15 @@
 #include "config.h"
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include <Ticker.h>
 #include <ArduinoOTA.h>
 #include <time.h>
+
+#ifdef ESP8266
+#include <ESP8266WiFi.h>
+#else
+#include <WiFi.h>
+#endif
 
 #ifdef MQTT_ENABLED
 #include <AsyncMqttClient.h>

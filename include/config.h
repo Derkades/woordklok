@@ -1,13 +1,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#ifdef ESP8266
 #include <TZ.h>
+#endif
+#include <FastLED.h>
 #include "effects.h"
 
 // WiFi
 #define WIFI_HOSTNAME "woordklok"
 
-#define WIFI_AP_ENABLE
+// #define WIFI_AP_ENABLE
 #ifdef WIFI_AP_ENABLE
     // Access point to configure WiFi
     #define WIFI_AP_SSID "Woordklok"
@@ -18,12 +21,12 @@
     #define WIFI_CONNECT_TIMEOUT 30 // seconds
 #else
     // Hardcoded WiFi credentials
-    #define WIFI_SSID ""
-    #define WIFI_PASS ""
+    #define WIFI_SSID "Angevare"
+    #define WIFI_PASS "Datzegikniet1"
 #endif
 
 // MQTT
-#define MQTT_ENABLED
+// #define MQTT_ENABLED
 #ifdef MQTT_ENABLED
     #define MQTT_HOST IPAddress(10, 0, 1, 1)
     #define MQTT_PORT 1883
@@ -36,11 +39,15 @@
 #define INITIAL_BRIGHTNESS 255
 
 // Time
-#define TIMEZONE TZ_Europe_Amsterdam
+#ifdef ESP8266
+// #define TIMEZONE TZ_Europe_Amsterdam
+#else
+#define TIMEZONE 2*3600, 3600
+#endif
 #define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
 // LEDs
-#define LED_PIN 13
+#define LED_CONFIG APA102, 35, 36
 
 // LDR (automatic brightness)
 //
@@ -71,6 +78,6 @@
 #define RAIN_SPEED 6 // higher is faster
 
 // May cause LED flickering. Leave disabled when not needed.
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 
 #endif // CONFIG_H

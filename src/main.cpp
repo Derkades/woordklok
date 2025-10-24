@@ -175,7 +175,11 @@ void setupWifi() {
     delay(5000);
     ESP.restart();
     #else
+    #ifdef ESP8266
     wifi_station_set_hostname(WIFI_HOSTNAME);
+    #else
+    WiFi.setHostname(WIFI_HOSTNAME);
+    #endif
     WiFi.persistent(false); // avoid unnecessary flash write cycles
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     #endif // WIFI_AP_ENABLE
@@ -221,10 +225,18 @@ void setup() {
     #endif
 
     led_setup();
+    #ifdef ESP8266
     configTime(TIMEZONE, "pool.ntp.org");
+    #else
+    configTime(TIMEZONE, "pool.ntp.org");
+    #endif
     startup_animation();
     setupWifi();
+    #ifdef ESP8266
     ArduinoOTA.begin(false);
+    #else
+    ArduinoOTA.begin();
+    #endif
 }
 
 void loop() {
