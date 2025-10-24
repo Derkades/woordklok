@@ -1,35 +1,36 @@
 #include "led.h"
 
 // First element denotes array length
-uint16_t HET    [] = {3, 89, 88, 87                   };
-uint16_t IS     [] = {2, 86, 85                       };
-uint16_t VIJF   [] = {4, 83, 82, 81, 80               };
+uint16_t HET    [] = {3, 2, 3, 4                      };
+uint16_t IS     [] = {2, 6, 7                         };
 
-uint16_t TIEN   [] = {4, 70, 71, 72, 73               };
-uint16_t KWART  [] = {5, 75, 76, 77, 78, 79           };
+uint16_t VIJF   [] = {4, 19, 18, 17, 16               };
+uint16_t TIEN   [] = {4, 14, 13, 12, 11               };
 
-uint16_t OVER   [] = {4, 69, 68, 67, 66               };
-uint16_t VOOR   [] = {4, 63, 62, 61, 60               };
+uint16_t KWART  [] = {5, 20, 21, 22, 23, 24           };
+uint16_t OVER   [] = {4, 26, 27, 28, 29               };
 
-uint16_t HALF   [] = {4, 50, 51, 52, 53               };
-uint16_t ZES    [] = {3, 54, 55, 56                   };
-uint16_t EEN    [] = {3, 57, 58, 59                   };
+uint16_t VOOR   [] = {4, 39, 38, 37, 36               };
+uint16_t HALF   [] = {4, 34, 33, 32, 31               };
 
-uint16_t TWEE   [] = {4, 49, 48, 47, 46               };
-uint16_t DRIE   [] = {4, 43, 42, 41, 40               };
+uint16_t EEN    [] = {3, 41, 42, 43                   };
+uint16_t TWEE   [] = {4, 46, 47, 48, 49               };
 
-uint16_t VIER   [] = {4, 30, 31, 32, 33               };
-uint16_t ZEVEN  [] = {5, 35, 36, 37, 38, 39           };
+uint16_t DRIE   [] = {4, 59, 58, 57, 56               };
+uint16_t VIER   [] = {4, 54, 53, 52, 51               };
 
-uint16_t VIJF_2 [] = {4, 29, 28, 27, 26               };
-uint16_t NEGEN  [] = {5, 24, 23, 22, 21, 20           };
+uint16_t VIJF_2 [] = {4, 60, 61, 62, 63               };
+uint16_t ZEVEN  [] = {5, 65, 66, 67, 68, 69           };
 
-uint16_t ACHT   [] = {4, 10, 11, 12, 13               };
-uint16_t TIEN_2 [] = {4, 13, 14, 15, 16               };
-uint16_t ELF    [] = {3, 17, 18, 19                   };
+uint16_t NEGEN  [] = {5, 78, 77, 76, 75, 74           };
+uint16_t ZES    [] = {3, 72, 71, 70                   };
 
-uint16_t TWAALF [] = {6, 9, 8, 7, 6, 5, 4             };
-uint16_t UUR    [] = {3, 2, 1, 0,                     };
+uint16_t ACHT   [] = {4, 80, 81, 82, 83               };
+uint16_t TIEN_2 [] = {4, 83, 84, 85, 86               };
+uint16_t ELF    [] = {3, 87, 88, 89                   };
+
+uint16_t TWAALF [] = {6, 99, 98, 97, 96, 95, 94       };
+uint16_t UUR    [] = {3, 92, 91, 90,                  };
 
 word_t HOURS[] = {
     EEN, TWEE, DRIE, VIER, VIJF_2, ZES, ZEVEN, ACHT, NEGEN, TIEN_2, ELF, TWAALF

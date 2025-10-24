@@ -14,7 +14,7 @@
 #include "effects.h"
 
 #define LETTER_LEDS 1 // number of leds per letter
-#define NUM_ROWS 9
+#define NUM_ROWS 10
 #define NUM_COLS 10
 #define NUM_LETTERS NUM_ROWS*NUM_COLS
 #define NUM_LEDS NUM_LETTERS*LETTER_LEDS

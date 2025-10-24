@@ -47,14 +47,14 @@
 #define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
 // LEDs
-#define LED_CONFIG APA102, 35, 36
+#define LED_CONFIG APA102, 35, 36, BGR
 
 // LDR (automatic brightness)
 //
 // GND               LDR_PIN          3v3
 //  |                   |              |
 //  \-- 4.7k resistor --+-- LDR 5506 --/
-#define LDR_ENABLED
+// #define LDR_ENABLED
 #ifdef LDR_ENABLED
     // #define LDR_DEBUG // write LDR values to the log every second
     #define LDR_PIN 17 // 17 = esp8266 A0
