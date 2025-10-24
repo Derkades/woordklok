@@ -228,7 +228,7 @@ void setup() {
     #ifdef ESP8266
     configTime(TIMEZONE, "pool.ntp.org");
     #else
-    configTime(TIMEZONE, "pool.ntp.org");
+    configTzTime(TIMEZONE, "pool.ntp.org");
     #endif
     startup_animation();
     setupWifi();

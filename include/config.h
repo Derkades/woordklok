@@ -1,9 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#ifdef ESP8266
-#include <TZ.h>
-#endif
 #include <FastLED.h>
 #include "effects.h"
 
@@ -40,9 +37,10 @@
 
 // Time
 #ifdef ESP8266
-// #define TIMEZONE TZ_Europe_Amsterdam
+#include <TZ.h>
+#define TIMEZONE TZ_Europe_Amsterdam
 #else
-#define TIMEZONE 2*3600, 3600
+#define TIMEZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 #endif
 #define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
