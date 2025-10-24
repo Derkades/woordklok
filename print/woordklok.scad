@@ -158,7 +158,6 @@ module main() {
             back(h/2+frame-t/2)
             xrot(90)
             cyl(h=t+e, d=ldr_d);
-            
         }
     }
 
@@ -195,14 +194,14 @@ module light_cover() {
 
             // horizontal line
             fwd(h / 2 + 0.1)
-            for (y = [1:leds_x-2]) {
+            for (y = [1:leds_y-1]) {
                 back(y * l_led)
                 cuboid([w-0.2, t_grid*3+2*tol, t], anchor=TOP);
             }
         }
 
         // horizontal slot for grid
-        for (y = [0:leds_x])
+        for (y = [0:leds_y])
         back(y * l_led - h/2)
         cuboid([w, t_grid+2*tol, t+e], anchor=TOP);
 
@@ -213,9 +212,9 @@ module light_cover() {
 
         // horizontal slot for led strip
         down(e)
-        for (y = [0:leds_x])
+        for (y = [1:leds_x])
         back(y*l_led - h/2 - l_led/2)
-        cuboid([w+e, w_led, t_led], anchor=BOTTOM);
+        cuboid([w+t_grid+e, w_led, t_led], anchor=BOTTOM);
     }
 }
 
