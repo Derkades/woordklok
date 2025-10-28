@@ -17,7 +17,7 @@ h_grid = 7;
 t_grid = 0.8;
 
 t = 1.2;
-draw_transparent_layer = true;
+draw_transparent_layer = false;
 t_trans = 0.4; // thickness of transparent layer
 
 text_size = l_led * 0.8;
@@ -76,10 +76,14 @@ wall_mount = "screw"; // "string" / "screw"
 d_wall_mount_screw = 4;
 d_wall_mount_screw_head = 8;
 
+feet_screw_dist = 30;
+feet_x = [-w/2+frame, w/2-frame];
+feet_y = [h/2-frame, h/2-frame-feet_screw_dist];
+
 test_section = false; // only render a small section for test print
-draw_main = true;
+draw_main = false;
 draw_light_cover = false;
-draw_back_cover = false;
+draw_back_cover = true;
 
 // nicer circles
 $fa = 0.5;
@@ -241,6 +245,18 @@ module back_cover() {
             
             // rectangle to push down on light cover
             rect_tube(h=d-h_grid-t-t/2-tol, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
+            
+            // feet: nut traps
+            down(t)
+            for (x = feet_x)
+            right(x)
+            for (y = feet_y)
+            fwd(y)
+            color("blue")
+            difference() {
+                cyl(r=5, h=t);
+                nut_trap_inline(t+e, "M3", anchor=CENTER);
+            }
         }
 
         // screw holes
@@ -261,6 +277,13 @@ module back_cover() {
             back(d_wall_mount_screw_head/2)
             cuboid([d_wall_mount_screw, d_wall_mount_screw_head, 2*t+e], rounding=d_wall_mount_screw/2, edges="Z");
         }
+        
+        // feet: screw holes
+        for (x = feet_x)
+        right(x)
+        for (y = feet_y)
+        fwd(y)
+        screw_hole("M3", length=t+e);
     }
 }
 
