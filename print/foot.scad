@@ -9,7 +9,7 @@ base_w = 70;
 tw = 10;
 th = 5;
 clock_w = 22;
-h = 80;
+h = 40;
 attach_h = 40;
 screw_dist = 30;
 
