@@ -17,7 +17,7 @@ h_grid = 7;
 t_grid = 0.8;
 
 t = 1.2;
-draw_transparent_layer = false;
+draw_transparent_layer = true;
 t_trans = 0.4; // thickness of transparent layer
 
 text_size = l_led * 0.75;
