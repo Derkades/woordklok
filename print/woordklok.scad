@@ -20,10 +20,10 @@ t = 1.2;
 draw_transparent_layer = false;
 t_trans = 0.4; // thickness of transparent layer
 
-text_size = l_led * 0.8;
+text_size = l_led * 0.75;
 // Install a stencil font. Copy font in Help > Font List
 //text_font = "Bunker Stencil";
-text_font = "Consola Mono:style=Bold";
+text_font = "Judera Ring:style=Regular";
 
 frame = 9; // extra space around edges
 
