@@ -246,17 +246,14 @@ module back_cover() {
             // rectangle to push down on light cover
             rect_tube(h=d-h_grid-t-t/2-tol, size=[w/2, h/2], wall=t_grid, anchor=TOP, chamfer=5);
             
-            // feet: nut traps
+            // feet: solid part of mounting
             down(t)
             for (x = feet_x)
             right(x)
             for (y = feet_y)
             fwd(y)
             color("blue")
-            difference() {
-                cyl(r=5, h=t);
-                nut_trap_inline(t+e, "M3", anchor=CENTER);
-            }
+            cyl(r=5, h=t);
         }
 
         // screw holes
@@ -278,12 +275,16 @@ module back_cover() {
             cuboid([d_wall_mount_screw, d_wall_mount_screw_head, 2*t+e], rounding=d_wall_mount_screw/2, edges="Z");
         }
         
-        // feet: screw holes
+        // feet: screw holes and nut traps
         for (x = feet_x)
         right(x)
         for (y = feet_y)
-        fwd(y)
-        screw_hole("M3", length=t+e);
+        fwd(y) {
+            screw_hole("M3", length=t+e);
+            
+            down(t)
+            nut_trap_inline(t+e, "M3", anchor=CENTER);
+        }
     }
 }
 
