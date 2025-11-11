@@ -283,7 +283,8 @@ module back_cover() {
             screw_hole("M3", length=t+e);
             
             down(t)
-            nut_trap_inline(t+e, "M3", anchor=CENTER);
+            nut_trap_inline(t+e, "M3", anchor=CENTER, $slop=-0.05);
+            // tight fit
         }
     }
 }
