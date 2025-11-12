@@ -70,7 +70,7 @@ back_screw_reinforcement_d = 6;
 power_socket_position = "right"; // position of usb-c power socket: bottom / right
 
 ldr_hole = true;
-ldr_d = 5;
+ldr_d = 5.1;
 
 wall_mount = "screw"; // "string" / "screw"
 d_wall_mount_screw = 4;
