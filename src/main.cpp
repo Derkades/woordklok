@@ -275,9 +275,10 @@ void loop() {
     #endif // LDR_ENABLED
 
     static bool effects_disabled = false;
-    if (brightness > 35) {
+
+    if (brightness > EFFECT_ENABLE_BRIGHTNESS) {
         effects_disabled = false;
-    } else if (brightness < 25) {
+    } else if (brightness < EFFECT_DISABLE_BRIGHTNESS) {
         effects_disabled = true;
     }
 

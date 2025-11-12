@@ -52,13 +52,13 @@
 // GND               LDR_PIN          3v3
 //  |                   |              |
 //  \-- 4.7k resistor --+-- LDR 5506 --/
-// #define LDR_ENABLED
+#define LDR_ENABLED
 #ifdef LDR_ENABLED
     // #define LDR_DEBUG // write LDR values to the log every second
     #define LDR_PIN 17 // 17 = esp8266 A0
     #define LDR_INPUT_MIN 20 // LDR value below which the clock displays minimum brightness
     #define LDR_INPUT_MAX 600 // LDR value above which the clock displays maximum brightness
-    #define LDR_BRIGHTNESS_MIN 10
+    #define LDR_BRIGHTNESS_MIN 1
     #define LDR_BRIGHTNESS_MAX 255
 #endif
 
@@ -74,7 +74,10 @@
 #define HUE_SHIFT (HUE_SHIFT_DEG / 360.0f) * 256.0f
 #define BACKGROUND_DIM 4 // background brightness reduction factor (>=1)
 #define RAIN_SPEED 6 // higher is faster
+
 // #define EFFECT_VFLIP
+#define EFFECT_ENABLE_BRIGHTNESS 15
+#define EFFECT_DISABLE_BRIGHTNESS 5
 
 // May cause LED flickering. Leave disabled when not needed.
 #define DEBUG_SERIAL
