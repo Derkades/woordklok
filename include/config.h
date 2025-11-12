@@ -18,8 +18,8 @@
     #define WIFI_CONNECT_TIMEOUT 30 // seconds
 #else
     // Hardcoded WiFi credentials
-    #define WIFI_SSID "Angevare"
-    #define WIFI_PASS "Datzegikniet1"
+    #define WIFI_SSID ""
+    #define WIFI_PASS ""
 #endif
 
 // MQTT
@@ -45,7 +45,7 @@
 #define TIME_OFFSET 0 // Number of seconds, useful to make the clock run in advance so you arrive early
 
 // LEDs
-#define LED_CONFIG APA102, 35, 36, BGR
+#define LED_CONFIG APA102, 13, 14, BGR
 
 // LDR (automatic brightness)
 //
