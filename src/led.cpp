@@ -288,22 +288,6 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
         }
     }
 
-    // Time error LED
-    #ifdef DCF77_ENABLED
-    static bool flashPreviousState = false;
-    static unsigned long flashPreviousTime = 0;
-    if (millis() - flashPreviousTime > 1000) {
-        if (DCF77_Clock::get_clock_state() == Clock::useless) {
-            leds[0] = flashPreviousState ? CRGB::Red : 0;
-        } else if (DCF77_Clock::get_clock_state() != Clock::synced) {
-            leds[0] = flashPreviousState ? CRGB::Orange : 0;
-        }
-        FastLED.show();
-        flashPreviousState = !flashPreviousState;
-        flashPreviousTime = millis();
-    }
-    #endif
-
     exit:
     FastLED.show();
 }
@@ -392,6 +376,17 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
     }
 
     writeWordsToLeds(hue, saturation, effect);
+
+    // Time error LED
+    #ifdef DCF77_ENABLED
+    if (DCF77_Clock::get_clock_state() == Clock::useless) {
+        leds[0] = (millis() / 1000) & 1 ? CRGB::Red : 0;
+        FastLED.show();
+    } else if (DCF77_Clock::get_clock_state() != Clock::synced) {
+        leds[0] = (millis() / 1000) & 1 ? CRGB::Orange : 0;
+        FastLED.show();
+    }
+    #endif
 
     tick = (tick + 1) & 0xFFFF;
 }
