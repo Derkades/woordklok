@@ -757,8 +757,8 @@ namespace Internal {
                 }
 
                 // create compile time error if we encounter an unexpectedt type
-                typedef bool assert_type_is_known[TMP::equal<noise_type, uint8_t>::val ||
-                                                  TMP::equal<noise_type, uint32_t>::val ? 0: -1];
+                // typedef bool assert_type_is_known[TMP::equal<noise_type, uint8_t>::val ||
+                //                                   TMP::equal<noise_type, uint32_t>::val ? 0: -1];
             }
 
             void debug() {

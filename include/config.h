@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define FASTLED_INTERRUPT_RETRY_COUNT 1
+#define FASTLED_ESP8266_RAW_PIN_ORDER
+#define FASTLED_USE_GLOBAL_BRIGHTNESS 1
+#define FASTLED_ALL_PINS_HARDWARE_SPI
 #include <FastLED.h>
 #include "effects.h"
 

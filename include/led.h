@@ -1,24 +1,17 @@
 #ifndef LED_H
 #define LED_H
 
-#include <list>
-
-#define FASTLED_INTERRUPT_RETRY_COUNT 1
-#define FASTLED_ESP8266_RAW_PIN_ORDER
-#define FASTLED_USE_GLOBAL_BRIGHTNESS 1
-#define FASTLED_ALL_PINS_HARDWARE_SPI
-#define ESP8266_SPI
-#include <FastLED.h>
-#include <stdint.h>
-
-#include "effects.h"
 #include "config.h"
-#include "log.h"
-#include "effects.h"
 
+#include <list>
+#include <stdint.h>
 #ifdef DCF77_ENABLED
 #include <dcf77.h>
 #endif
+
+#include "effects.h"
+#include "log.h"
+#include "effects.h"
 
 #define LETTER_LEDS 1 // number of leds per letter
 #define NUM_ROWS 10
