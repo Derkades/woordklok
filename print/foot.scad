@@ -18,15 +18,16 @@ cuboid([base_w, th, tw], chamfer=th/2, edges=[BACK+RIGHT]);
 hull() { 
     back(th/2)
     left(base_w/2)
-    #cuboid([th, 0.1, tw], anchor=LEFT+FRONT);
+    cuboid([th, 0.1, tw], anchor=LEFT+FRONT);
     
     back(h)
     left(clock_w/2)
-    #cuboid([th, 0.1, tw], anchor=RIGHT+BACK);
+    cuboid([th, 0.1, tw], anchor=RIGHT+BACK);
 }
 
 left(clock_w/2)
 back(h)
+zrot(3)
 difference() {
     cuboid([th, attach_h, tw], anchor=RIGHT+FRONT);
     
