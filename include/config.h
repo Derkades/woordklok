@@ -5,6 +5,8 @@
 #include "effects.h"
 
 // WiFi
+// #define WIFI_ENABLED
+#ifdef WIFI_ENABLED
 #define WIFI_HOSTNAME "woordklok"
 
 // #define WIFI_AP_ENABLE
@@ -27,6 +29,13 @@
 #ifdef MQTT_ENABLED
     #define MQTT_HOST IPAddress(10, 0, 1, 1)
     #define MQTT_PORT 1883
+#endif
+
+#endif // WIFI_ENABLED
+
+#define DCF77_ENABLED
+#ifdef DCF77_ENABLED
+    #define DCF77_DATA_PIN 5
 #endif
 
 // Initial state (or permanent state, if MQTT is not used)

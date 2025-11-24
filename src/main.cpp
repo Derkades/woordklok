@@ -134,6 +134,7 @@ void onWifiConnect(const WiFiEventStationModeGotIP& event) {
 }
 #endif
 
+#ifdef WIFI_ENABLED
 void setupWifi() {
     #ifdef MQTT_ENABLED
     mqttClient.onConnect(onMqttConnect);
@@ -184,6 +185,7 @@ void setupWifi() {
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     #endif // WIFI_AP_ENABLE
 }
+#endif
 
 void setupOta() {
     ArduinoOTA.onStart([]() {
@@ -219,6 +221,14 @@ void setupOta() {
     });
 }
 
+#ifdef DCF77_ENABLED
+uint8_t dcf77_input_provider() {
+    const uint8_t sampled_data = digitalRead(DCF77_DATA_PIN);
+    digitalWrite(LED_BUILTIN, sampled_data);
+    return sampled_data;
+}
+#endif
+
 void setup() {
     #ifdef DEBUG_SERIAL
     Serial.begin(115200);
@@ -231,16 +241,34 @@ void setup() {
     configTzTime(TIMEZONE, "pool.ntp.org");
     #endif
     startup_animation();
+
+    #ifdef WIFI_ENABLED
     setupWifi();
     #ifdef ESP8266
     ArduinoOTA.begin(false);
     #else
     ArduinoOTA.begin();
     #endif
+    #else // WIFI_ENABLED
+    #ifdef ESP8266
+    WiFi.disconnect(true);
+    #else
+    WiFi.disconnect(true, true);
+    #endif
+    #endif
+
+    #ifdef DCF77_ENABLED
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(DCF77_DATA_PIN, INPUT_PULLUP);
+    DCF77_Clock::setup();
+    DCF77_Clock::set_input_provider(dcf77_input_provider);
+    #endif
 }
 
 void loop() {
+    #ifdef WIFI_ENABLED
     ArduinoOTA.handle();
+    #endif
 
     #ifdef MQTT_ENABLED
     // publish online state every 10 seconds

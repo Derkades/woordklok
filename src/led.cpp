@@ -288,6 +288,22 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
         }
     }
 
+    // Time error LED
+    #ifdef DCF77_ENABLED
+    static bool flashPreviousState = false;
+    static unsigned long flashPreviousTime = 0;
+    if (millis() - flashPreviousTime > 1000) {
+        if (DCF77_Clock::get_clock_state() == Clock::useless) {
+            leds[0] = flashPreviousState ? CRGB::Red : 0;
+        } else if (DCF77_Clock::get_clock_state() != Clock::synced) {
+            leds[0] = flashPreviousState ? CRGB::Orange : 0;
+        }
+        FastLED.show();
+        flashPreviousState = !flashPreviousState;
+        flashPreviousTime = millis();
+    }
+    #endif
+
     exit:
     FastLED.show();
 }
@@ -297,21 +313,41 @@ void led_setup() {
 }
 
 void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {
-    // based on getLocalTime, but without blocking
-    time_t t = time(NULL) + TIME_OFFSET;
     tm tm;
+
+    #ifdef WIFI_ENABLED
+    // NTP time
+    time_t t = time(NULL) + TIME_OFFSET;
     localtime_r(&t, &tm);
+    #endif
+
+    #ifdef DCF77_ENABLED
+    // DCF77 time
+    using namespace Clock;
+    Clock::time_t now;
+    DCF77_Clock::read_current_time(now);
+    tm.tm_sec = BCD::bcd_to_int(now.second);
+    tm.tm_min = BCD::bcd_to_int(now.minute);
+    tm.tm_hour = BCD::bcd_to_int(now.hour);
+    tm.tm_mday = BCD::bcd_to_int(now.day);
+    tm.tm_mon = BCD::bcd_to_int(now.month) - 1;
+    tm.tm_year = 1900 - (BCD::bcd_to_int(now.year) + 2000);
+    tm.tm_wday = BCD::bcd_to_int(now.weekday) % 7;
+    tm.tm_isdst = now.uses_summertime;
+    #endif
 
     uint8_t timeStep = (uint8_t) roundf(tm.tm_min / 5.0f);
 
     switch(display_state) {
         case STATE_BOOT:
+            FastLED.setBrightness(brightness);
             // wait for network time
             if (tm.tm_year > (2020 - 1900)) {
                 display_state = STATE_BLANK;
             }
             break;
         case STATE_BLANK:
+            FastLED.setBrightness(brightness);
             if (!on) {
                 break; // clock is turned off
             }

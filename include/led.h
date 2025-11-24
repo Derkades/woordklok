@@ -14,6 +14,10 @@
 #include "log.h"
 #include "effects.h"
 
+#ifdef DCF77_ENABLED
+#include <dcf77.h>
+#endif
+
 #define LETTER_LEDS 1 // number of leds per letter
 #define NUM_ROWS 10
 #define NUM_COLS 10
