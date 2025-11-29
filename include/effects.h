@@ -17,4 +17,6 @@ bool ledEffectFromString(const char *str, LedEffect *effect);
 
 const char *ledEffectToString(const LedEffect &ledEffect);
 
+LedEffect nextEffect(LedEffect &effect);
+
 #endif // EFFECTS_H

@@ -24,6 +24,10 @@ uint8_t   ha_hue                = INITIAL_HUE;
 uint8_t   ha_saturation         = INITIAL_SATURATION;
 uint8_t   ha_brightness         = INITIAL_BRIGHTNESS;
 
+Bounce bounce = Bounce();
+
+static struct tm tm;
+
 void log(const String &msg) {
     #ifdef DEBUG_SERIAL
     Serial.println(msg);
@@ -185,7 +189,6 @@ void setupWifi() {
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     #endif // WIFI_AP_ENABLE
 }
-#endif
 
 void setupOta() {
     ArduinoOTA.onStart([]() {
@@ -220,6 +223,7 @@ void setupOta() {
         }
     });
 }
+#endif // WIFI_ENABLED
 
 #ifdef DCF77_ENABLED
 uint8_t dcf77_input_provider() {
@@ -234,13 +238,19 @@ void setup() {
     Serial.begin(115200);
     #endif
 
+    LittleFS.begin();
+
     led_setup();
+
     #ifdef ESP8266
     configTime(TIMEZONE, "pool.ntp.org");
     #else
     configTzTime(TIMEZONE, "pool.ntp.org");
     #endif
+
+    #ifdef STARTUP_ANIMATION
     startup_animation();
+    #endif
 
     #ifdef WIFI_ENABLED
     setupWifi();
@@ -263,6 +273,51 @@ void setup() {
     DCF77_Clock::setup();
     DCF77_Clock::set_input_provider(dcf77_input_provider);
     #endif
+
+    bounce.attach(BUTTON_PIN, INPUT_PULLUP);
+
+    // Restore effect
+    if (LittleFS.exists("effect")) {
+        File f = LittleFS.open("effect", "r");
+        f.read((uint8_t*) &ha_effect, 1);
+        f.close();
+    }
+}
+
+void update_time() {
+    #ifdef WIFI_ENABLED
+    // NTP time
+    time_t t = time(NULL) + TIME_OFFSET;
+    localtime_r(&t, &tm);
+    #endif
+
+    #ifdef DCF77_ENABLED
+    // DCF77 time
+    using namespace Clock;
+    Clock::time_t now;
+    DCF77_Clock::read_current_time(now);
+    tm.tm_sec = BCD::bcd_to_int(now.second);
+    tm.tm_min = BCD::bcd_to_int(now.minute);
+    tm.tm_hour = BCD::bcd_to_int(now.hour);
+    tm.tm_mday = BCD::bcd_to_int(now.day);
+    tm.tm_mon = BCD::bcd_to_int(now.month) - 1;
+    tm.tm_year = BCD::bcd_to_int(now.year) + 2000 - 1900;
+    tm.tm_wday = BCD::bcd_to_int(now.weekday) % 7;
+    tm.tm_isdst = now.uses_summertime;
+
+    #ifdef DEBUG_SERIAL
+    Serial.print("DCF77 state: ");
+    switch (DCF77_Clock::get_clock_state()) {
+        case Clock::useless:  Serial.println("useless"); break;
+        case Clock::dirty:    Serial.println("dirty"); break;
+        case Clock::synced:   Serial.println("synced"); break;
+        case Clock::unlocked: Serial.println("unlocked"); break;
+        case Clock::locked:   Serial.println("locked"); break;
+        case Clock::free:     Serial.println("free"); break;
+    }
+    Serial.printf("Time: %04i-%02i-%02i %02i:%02i:%02i\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    #endif // DEBUG_SERIAL
+    #endif // DCF77_ENABLED
 }
 
 void loop() {
@@ -289,9 +344,7 @@ void loop() {
     #ifdef LDR_ENABLED
     static uint16_t ldr_avg = 0;
     ldr_avg = (ldr_avg * 7 + (uint16_t) analogRead(LDR_PIN)) / 8;
-    uint8_t ldr_brightness = constrain(map(ldr_avg, LDR_INPUT_MIN, LDR_INPUT_MAX, 0, UINT8_MAX), LDR_BRIGHTNESS_MIN, LDR_BRIGHTNESS_MAX);
-    // brightness = sqrt16((uint16_t) ldr_brightness * (uint16_t) ha_brightness);
-    brightness = ldr_brightness;
+    brightness = constrain(map(ldr_avg, LDR_INPUT_MIN, LDR_INPUT_MAX, 0, UINT8_MAX), LDR_BRIGHTNESS_MIN, LDR_BRIGHTNESS_MAX);
 
     #ifdef LDR_DEBUG
     static unsigned long last_ldr = 0;
@@ -302,6 +355,18 @@ void loop() {
     #endif // LDR_DEBUG
     #endif // LDR_ENABLED
 
+    // Button
+    bounce.update();
+    if (bounce.changed() && bounce.read() == LOW) {
+        ha_effect = nextEffect(ha_effect);
+        // Save current effect persitently
+        File f = LittleFS.open("effect", "w");
+        f.write((uint8_t*) &ha_effect, 1);
+        f.close();
+    }
+
+    update_time();
+
     static bool effects_disabled = false;
 
     if (brightness > EFFECT_ENABLE_BRIGHTNESS) {
@@ -310,7 +375,7 @@ void loop() {
         effects_disabled = true;
     }
 
-    led_loop(ha_on, ha_hue, ha_saturation, brightness, effects_disabled ? EFFECT_STATIC : ha_effect);
+    led_loop(&tm, ha_on, ha_hue, ha_saturation, brightness, effects_disabled ? EFFECT_STATIC : ha_effect);
 
     delay(10);
 }

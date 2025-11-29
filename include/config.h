@@ -9,7 +9,7 @@
 #include "effects.h"
 
 // WiFi
-// #define WIFI_ENABLED
+#define WIFI_ENABLED
 #ifdef WIFI_ENABLED
 #define WIFI_HOSTNAME "woordklok"
 
@@ -37,9 +37,9 @@
 
 #endif // WIFI_ENABLED
 
-#define DCF77_ENABLED
+// #define DCF77_ENABLED
 #ifdef DCF77_ENABLED
-    #define DCF77_DATA_PIN 5
+    #define DCF77_DATA_PIN D1
 #endif
 
 // Initial state (or permanent state, if MQTT is not used)
@@ -75,11 +75,14 @@
     #define LDR_BRIGHTNESS_MAX 255
 #endif
 
+// #define STARTUP_ANIMATION
+#ifdef STARTUP_ANIMATION
 // Startup animation
 #define STARTUP_ANIMATION_DELAY 20
 #define STARTUP_ANIMATION_COLOR_MOVING 0xFFFFFF
 #define STARTUP_ANIMATION_COLOR_TRAIL 0x602000
 #define STARTUP_ANIMATION_COLOR_BACKGROUND 0x200000
+#endif
 
 // Effects
 #define RAINBOW_SATURATION 192
@@ -94,5 +97,7 @@
 
 // May cause LED flickering. Leave disabled when not needed.
 #define DEBUG_SERIAL
+
+#define BUTTON_PIN D1
 
 #endif // CONFIG_H

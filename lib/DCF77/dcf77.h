@@ -554,7 +554,6 @@ namespace Internal {
 
         #define CRITICAL_SECTION for (int __n = 1; __n; __n = 0)
     #elif defined(ARDUINO_ARCH_ESP8266)
-        #warning Experimental ESP8266 support using Arduino core for ESP8266
         //Inspired by
         // --> https://github.com/wizard97/SimplyAtomic/blob/master/esp8266.h
         #ifndef __STRINGIFY

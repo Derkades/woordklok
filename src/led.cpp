@@ -38,11 +38,10 @@ word_t HOURS[] = {
 
 static DisplayState display_state = STATE_BOOT;
 static CRGB leds[222];
-static uint16_t tick;
 static uint8_t currentHour = 0;
 static uint8_t currentTimeStep = 0;
 static std::list<word_t> current_words = {};
-static uint16_t current_words_letter_count = 0;
+static uint16_t tick;
 static uint16_t letter_display_limit = UINT16_MAX;
 
 static void letterToRowCol(uint16_t letter, uint8_t *row, uint8_t *col) {
@@ -70,12 +69,10 @@ static word_t hourWord(const int &hour) {
 
 static void clearWords() {
     current_words.clear();
-    current_words_letter_count = 0;
 }
 
 static void writeWord(word_t word) {
     current_words.push_back(word);
-    current_words_letter_count += word[0];
 }
 
 static void writeTimeToWords() {
@@ -181,10 +178,10 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
     switch (effect) {
         case EFFECT_COLOR_FADE:
         case EFFECT_SHOWER_COLOR_FADE:
-            hue = (hue + (tick >> 2)) & 0xFF;
-            break;
+        hue = hue + ((tick >> 4) & 0xFF);
+        break;
         default:
-            break;
+        break;
     }
 
     // Fill background
@@ -224,7 +221,7 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
                     if (v > UINT8_MAX) {
                         v = 2*UINT8_MAX - v;
                     }
-                    rgb.setHSV(complementary_hue, saturation, v);
+                    rgb.setHSV(complementary_hue, saturation, v / BACKGROUND_DIM);
                 }
                 break;
             }
@@ -258,7 +255,7 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
     for (word_t word : current_words) {
         for (uint16_t i = 1; i < word[0] + 1; i++) {
             if (++drawn_letters > letter_display_limit) {
-                goto exit;
+                return;
             }
 
             uint16_t letterPos = word[i];
@@ -287,63 +284,37 @@ static void writeWordsToLeds(uint8_t hue, uint8_t saturation, LedEffect effect) 
             setLetterColor(letterPos, rgb);
         }
     }
-
-    exit:
-    FastLED.show();
 }
 
 void led_setup() {
     FastLED.addLeds<LED_CONFIG>(leds, NUM_LEDS);
 }
 
-void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {
-    tm tm;
+void led_loop(struct tm *tm, bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect) {
+    uint8_t timeStep = (uint8_t) roundf(tm->tm_min / 5.0f);
 
-    #ifdef WIFI_ENABLED
-    // NTP time
-    time_t t = time(NULL) + TIME_OFFSET;
-    localtime_r(&t, &tm);
-    #endif
-
-    #ifdef DCF77_ENABLED
-    // DCF77 time
-    using namespace Clock;
-    Clock::time_t now;
-    DCF77_Clock::read_current_time(now);
-    tm.tm_sec = BCD::bcd_to_int(now.second);
-    tm.tm_min = BCD::bcd_to_int(now.minute);
-    tm.tm_hour = BCD::bcd_to_int(now.hour);
-    tm.tm_mday = BCD::bcd_to_int(now.day);
-    tm.tm_mon = BCD::bcd_to_int(now.month) - 1;
-    tm.tm_year = 1900 - (BCD::bcd_to_int(now.year) + 2000);
-    tm.tm_wday = BCD::bcd_to_int(now.weekday) % 7;
-    tm.tm_isdst = now.uses_summertime;
-    #endif
-
-    uint8_t timeStep = (uint8_t) roundf(tm.tm_min / 5.0f);
+    if (display_state != STATE_FADE_OUT) {
+        FastLED.setBrightness(brightness);
+    }
 
     switch(display_state) {
         case STATE_BOOT:
-            FastLED.setBrightness(brightness);
             // wait for network time
-            if (tm.tm_year > (2020 - 1900)) {
+            if (tm->tm_year > (2020 - 1900)) {
                 display_state = STATE_BLANK;
             }
             break;
         case STATE_BLANK:
-            FastLED.setBrightness(brightness);
             if (!on) {
                 break; // clock is turned off
             }
             display_state = STATE_DISPLAY_TIME;
-            letter_display_limit = 0;
             currentTimeStep = timeStep;
-            currentHour = tm.tm_hour;
+            currentHour = tm->tm_hour;
+            letter_display_limit = 0;
             writeTimeToWords();
             break;
         case STATE_DISPLAY_TIME:
-            FastLED.setBrightness(brightness);
-
             if (letter_display_limit < NUM_LETTERS && tick % 16 == 0) {
                 letter_display_limit++;
             }
@@ -364,10 +335,10 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
             if (brightness > 4) {
                 FastLED.setBrightness(brightness - 4);
             } else {
+                FastLED.setBrightness(0);
                 clearWords();
                 display_state = STATE_BLANK;
             }
-
             break;
         } default:
             log("Unknown display state: " + String(display_state));
@@ -377,20 +348,16 @@ void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedE
 
     writeWordsToLeds(hue, saturation, effect);
 
-    // Time error LED
-    #ifdef DCF77_ENABLED
-    if (DCF77_Clock::get_clock_state() == Clock::useless) {
-        leds[0] = (millis() / 1000) & 1 ? CRGB::Red : 0;
-        FastLED.show();
-    } else if (DCF77_Clock::get_clock_state() != Clock::synced) {
-        leds[0] = (millis() / 1000) & 1 ? CRGB::Orange : 0;
-        FastLED.show();
+    if (display_state == STATE_BOOT) {
+        // Flash an LED while waiting
+        leds[0] = (millis() / 500) & 1 ? CRGB::Green : 0;
     }
-    #endif
 
-    tick = (tick + 1) & 0xFFFF;
+    FastLED.show();
+    tick += 1;
 }
 
+#ifdef STARTUP_ANIMATION
 void startup_animation() {
     FastLED.setBrightness(INITIAL_BRIGHTNESS);
 
@@ -416,6 +383,7 @@ void startup_animation() {
         delay(STARTUP_ANIMATION_DELAY);
     }
 }
+#endif
 
 void status_led(uint32_t color) {
     setLetterColor(0, color);

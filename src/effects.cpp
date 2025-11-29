@@ -25,3 +25,15 @@ bool ledEffectFromString(const char *str, LedEffect *effect) {
 const char *ledEffectToString(const LedEffect &ledEffect) {
     return led_effect_names[ledEffect];
 }
+
+LedEffect nextEffect(LedEffect &effect) {
+    switch(effect) {
+        case EFFECT_STATIC: return EFFECT_COLOR_FADE;
+        case EFFECT_COLOR_FADE: return EFFECT_RAINBOW;
+        case EFFECT_RAINBOW: return EFFECT_SPARKLE_STATIC;
+        case EFFECT_SPARKLE_STATIC: return EFFECT_SHOWER;
+        case EFFECT_SHOWER: return EFFECT_SHOWER_COLOR_FADE;
+        case EFFECT_SHOWER_COLOR_FADE: return EFFECT_TEST_PATTERN;
+        case EFFECT_TEST_PATTERN: return EFFECT_STATIC;
+    }
+}

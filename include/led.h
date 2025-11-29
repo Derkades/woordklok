@@ -5,6 +5,8 @@
 
 #include <list>
 #include <stdint.h>
+#include <time.h>
+
 #ifdef DCF77_ENABLED
 #include <dcf77.h>
 #endif
@@ -30,7 +32,7 @@ enum DisplayState {
 
 extern void led_setup();
 
-extern void led_loop(bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect);
+extern void led_loop(struct tm *tm, bool on, uint8_t hue, uint8_t saturation, uint8_t brightness, LedEffect effect);
 
 extern void startup_animation();
 
