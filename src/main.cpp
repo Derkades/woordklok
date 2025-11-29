@@ -323,7 +323,16 @@ void update_time() {
 void loop() {
     #ifdef WIFI_ENABLED
     ArduinoOTA.handle();
-    #endif
+
+    static unsigned long last_wifi_check = 0;
+    if (millis() - last_wifi_check > 10000 || last_wifi_check > millis()) {
+        if (!WiFi.isConnected()) {
+            Serial.println("WiFi is disconnected, call setupWifi");
+            setupWifi();
+        }
+        last_wifi_check = millis();
+    }
+    #endif // WIFI_ENABLED
 
     #ifdef MQTT_ENABLED
     // publish online state every 10 seconds
