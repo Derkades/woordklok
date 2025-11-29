@@ -69,8 +69,8 @@
 #ifdef LDR_ENABLED
     // #define LDR_DEBUG // write LDR values to the log every second
     #define LDR_PIN 17 // 17 = esp8266 A0
-    #define LDR_INPUT_MIN 20 // LDR value below which the clock displays minimum brightness
-    #define LDR_INPUT_MAX 600 // LDR value above which the clock displays maximum brightness
+    #define LDR_INPUT_MIN 50 // LDR value below which the clock displays minimum brightness
+    #define LDR_INPUT_MAX 850 // LDR value above which the clock displays maximum brightness
     #define LDR_BRIGHTNESS_MIN 1
     #define LDR_BRIGHTNESS_MAX 255
 #endif
@@ -92,8 +92,8 @@
 #define RAIN_SPEED 6 // higher is faster
 
 // #define EFFECT_VFLIP
-#define EFFECT_ENABLE_BRIGHTNESS 15
-#define EFFECT_DISABLE_BRIGHTNESS 5
+#define EFFECT_ENABLE_BRIGHTNESS 6
+#define EFFECT_DISABLE_BRIGHTNESS 2
 
 // May cause LED flickering. Leave disabled when not needed.
 #define DEBUG_SERIAL
