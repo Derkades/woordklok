@@ -35,5 +35,5 @@ difference() {
     back(b)
     left()
     yrot(-90)
-    screw_hole("M3", l=th, anchor=BOTTOM);
+    screw_hole("M3", head="flat", l=th, anchor=BOTTOM);
 }
